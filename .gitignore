@@ -1,5 +1,30 @@
 # Spec-Kit
 .specify/
+specs/
 
 # Claude Code
 .claude/
+CLAUDE.md
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment
+.env
+.env.*
+
+# macOS
+.DS_Store

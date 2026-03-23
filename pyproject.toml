@@ -1,0 +1,62 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "khanote"
+version = "0.1.0"
+description = "Universal research workflow kit connecting vibe coding tools with Obsidian"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "almost-khan" }]
+keywords = ["obsidian", "research", "cli", "ai", "knowledge-management"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "typer>=0.12.0",
+    "rich>=13.0.0",
+    "pydantic>=2.0.0",
+    "httpx>=0.27.0",
+    "pyyaml>=6.0.0",
+]
+
+[project.scripts]
+khanote = "khanote.cli.app:app"
+
+[project.optional-dependencies]
+notebooklm = ["notebooklm-py>=0.1.0"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/khanote"]
+
+[tool.hatch.build]
+include = [
+    "src/khanote/**",
+    "skills/**",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = [
+    "unit: Unit tests (no external dependencies)",
+    "integration: Integration tests (may use filesystem)",
+    "slow: Tests that take longer to run",
+]
+addopts = "-v --tb=short"
+
+[tool.coverage.run]
+source = ["src/khanote"]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+show_missing = true
