@@ -11,6 +11,8 @@ from khanote.models.config import (
     ResearchConfig,
     ResearcherConfig,
     DomainConfig,
+    FeedConfig,
+    FeedFiltersConfig,
 )
 
 
@@ -114,6 +116,135 @@ class TestConfigInitializedTools:
         ]
         config = Config(**minimal_config_dict)
         assert len(config.initialized_tools) == 5
+
+
+class TestResearcherConfigType:
+    """T006: Tests for extended ResearcherConfig with type, capabilities, endpoints, sop."""
+
+    def test_builtin_type_default(self, vault_dir, minimal_config_dict):
+        config = Config(**minimal_config_dict)
+        assert config.research.researchers["perplexity"].type == "builtin"
+
+    def test_http_type_accepted(self, vault_dir, minimal_config_dict):
+        minimal_config_dict["research"]["researchers"]["exa"] = {
+            "enabled": True,
+            "type": "http",
+            "api_key": "test-key",
+            "capabilities": ["search"],
+            "endpoints": {
+                "search": {
+                    "url": "https://api.exa.ai/search",
+                    "method": "POST",
+                    "headers": {"Authorization": "Bearer {api_key}"},
+                    "body_template": '{"query": "{query}"}',
+                    "response_mapping": {"results": "$.results"},
+                }
+            },
+        }
+        config = Config(**minimal_config_dict)
+        assert config.research.researchers["exa"].type == "http"
+
+    def test_http_type_requires_capabilities(self, vault_dir, minimal_config_dict):
+        minimal_config_dict["research"]["researchers"]["exa"] = {
+            "enabled": True,
+            "type": "http",
+            "api_key": "test-key",
+            "capabilities": [],  # empty — invalid
+        }
+        with pytest.raises(Exception):
+            Config(**minimal_config_dict)
+
+    def test_http_type_capabilities_must_have_endpoint_or_sop(self, vault_dir, minimal_config_dict):
+        minimal_config_dict["research"]["researchers"]["exa"] = {
+            "enabled": True,
+            "type": "http",
+            "api_key": "test-key",
+            "capabilities": ["search"],
+            # no endpoints and no sop for "search" — invalid
+        }
+        with pytest.raises(Exception):
+            Config(**minimal_config_dict)
+
+    def test_sop_only_capability_accepted(self, vault_dir, minimal_config_dict):
+        minimal_config_dict["research"]["researchers"]["sop_only"] = {
+            "enabled": True,
+            "type": "http",
+            "capabilities": ["analyze"],
+            "sop": {"analyze": "Analyze the following: {results}"},
+        }
+        config = Config(**minimal_config_dict)
+        assert config.research.researchers["sop_only"].sop["analyze"] == "Analyze the following: {results}"
+
+    def test_sop_fallback_with_endpoint(self, vault_dir, minimal_config_dict):
+        """Both endpoint and SOP for same capability — both stored."""
+        minimal_config_dict["research"]["researchers"]["dual"] = {
+            "enabled": True,
+            "type": "http",
+            "capabilities": ["search"],
+            "endpoints": {
+                "search": {
+                    "url": "https://example.com/search",
+                    "method": "GET",
+                    "headers": {},
+                    "body_template": "",
+                    "response_mapping": {"results": "$.items"},
+                }
+            },
+            "sop": {"search": "Search for: {query}"},
+        }
+        config = Config(**minimal_config_dict)
+        r = config.research.researchers["dual"]
+        assert r.endpoints is not None
+        assert r.sop is not None
+
+
+class TestFeedConfig:
+    """T006: Tests for FeedConfig model and Config.feeds section."""
+
+    def test_feed_config_minimal(self):
+        feed = FeedConfig(researcher="arxiv", query="large language models")
+        assert feed.researcher == "arxiv"
+        assert feed.query == "large language models"
+        assert feed.frequency == "daily"
+        assert feed.active is True
+
+    def test_feed_config_with_filters(self):
+        feed = FeedConfig(
+            researcher="perplexity",
+            query="AI startup funding",
+            filters=FeedFiltersConfig(keywords=["startup", "funding"], max_age_days=7),
+        )
+        assert feed.filters.keywords == ["startup", "funding"]
+        assert feed.filters.max_age_days == 7
+
+    def test_feed_config_active_defaults_true(self):
+        feed = FeedConfig(researcher="arxiv", query="test")
+        assert feed.active is True
+
+    def test_feed_config_frequency_must_be_daily(self):
+        with pytest.raises(Exception):
+            FeedConfig(researcher="arxiv", query="test", frequency="weekly")
+
+    def test_feed_config_query_must_be_nonempty(self):
+        with pytest.raises(Exception):
+            FeedConfig(researcher="arxiv", query="")
+
+    def test_config_feeds_section(self, vault_dir, minimal_config_dict):
+        minimal_config_dict["feeds"] = {
+            "llm-papers": {
+                "researcher": "perplexity",
+                "query": "large language models",
+                "frequency": "daily",
+                "active": True,
+            }
+        }
+        config = Config(**minimal_config_dict)
+        assert "llm-papers" in config.feeds
+        assert config.feeds["llm-papers"].researcher == "perplexity"
+
+    def test_config_feeds_empty_by_default(self, vault_dir, minimal_config_dict):
+        config = Config(**minimal_config_dict)
+        assert config.feeds == {}
 
 
 class TestConfigFromYaml:

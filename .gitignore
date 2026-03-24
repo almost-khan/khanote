@@ -20,7 +20,14 @@ build/
 # Testing
 .pytest_cache/
 .coverage
+.coverage.*
+coverage.xml
 htmlcov/
+.tox/
+
+# Linting / Type checking
+.mypy_cache/
+.ruff_cache/
 
 # Environment
 .env

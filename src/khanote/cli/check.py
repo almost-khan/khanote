@@ -76,4 +76,21 @@ def run_check(vault_dir: Path | None = None) -> None:
             else:
                 table.add_row(f"  {name} key", "[yellow]![/yellow]", f"${env_var} not set")
 
+    # Feeds (T050: include feed health in status table)
+    feeds = config.get("feeds") or {}
+    if feeds:
+        from khanote.feeds.manager import FeedManager
+        manager = FeedManager(config_file)
+        orphans = manager.detect_orphans()
+        active_feeds = [n for n, f in feeds.items() if f.get("active", True)]
+        paused_feeds = [n for n, f in feeds.items() if not f.get("active", True)]
+        feed_details = f"{len(active_feeds)} active, {len(paused_feeds)} paused"
+        if orphans:
+            feed_details += f", {len(orphans)} orphaned"
+            table.add_row("Feeds", "[yellow]![/yellow]", f"{feed_details} — orphaned: {', '.join(orphans)}")
+        else:
+            table.add_row("Feeds", "[green]✓[/green]", feed_details)
+    else:
+        table.add_row("Feeds", "[dim]—[/dim]", "No feeds. Run /khanote.feed.add to create one.")
+
     console.print(table)

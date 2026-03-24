@@ -12,6 +12,12 @@ app = typer.Typer(
     help="Universal research workflow kit connecting vibe coding tools with Obsidian.",
     no_args_is_help=True,
 )
+
+researcher_app = typer.Typer(help="Manage custom researchers.", no_args_is_help=True)
+app.add_typer(researcher_app, name="researcher")
+
+feed_app = typer.Typer(help="Manage research feeds.", no_args_is_help=True)
+app.add_typer(feed_app, name="feed")
 console = Console()
 
 
@@ -88,6 +94,51 @@ def check() -> None:
     """Validate vault, tools, researchers, and API keys."""
     from khanote.cli.check import run_check
     run_check()
+
+
+@researcher_app.command("add")
+def researcher_add() -> None:
+    """Add a custom researcher via guided flow (run as a skill for best experience)."""
+    console.print(
+        "[yellow]Tip:[/yellow] For the best experience, run [bold]/khanote.researcher.add[/bold] "
+        "inside your vibe coding tool (Claude Code, Cursor, etc.).\n"
+        "The guided flow will prompt you interactively."
+    )
+
+
+@feed_app.command("add")
+def _feed_add() -> None:
+    """Add a feed via guided flow."""
+    from khanote.cli.feed_commands import feed_add
+    feed_add()
+
+
+@feed_app.command("list")
+def _feed_list() -> None:
+    """List all configured feeds."""
+    from khanote.cli.feed_commands import feed_list
+    feed_list()
+
+
+@feed_app.command("pause")
+def _feed_pause(name: str = typer.Argument(None, help="Feed name to pause")) -> None:
+    """Pause a feed."""
+    from khanote.cli.feed_commands import feed_pause
+    feed_pause(name)
+
+
+@feed_app.command("resume")
+def _feed_resume(name: str = typer.Argument(None, help="Feed name to resume")) -> None:
+    """Resume a paused feed."""
+    from khanote.cli.feed_commands import feed_resume
+    feed_resume(name)
+
+
+@feed_app.command("remove")
+def _feed_remove(name: str = typer.Argument(None, help="Feed name to remove")) -> None:
+    """Remove a feed."""
+    from khanote.cli.feed_commands import feed_remove
+    feed_remove(name)
 
 
 if __name__ == "__main__":

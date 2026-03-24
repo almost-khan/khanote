@@ -108,7 +108,8 @@ def run_init(
             f"Vault: {vault_path}\n"
             f"Tool: {tool_name}\n"
             f"Researcher: {researcher_name}\n\n"
-            f"Run [bold]/khanote.research.start <topic>[/bold] to begin.",
+            f"Run [bold]/khanote.research.start <topic>[/bold] to begin.\n\n"
+            f"[dim]Tip: Set up a daily research feed with [bold]/khanote.feed.add[/bold][/dim]",
             title="khanote init",
         )
     )
