@@ -12,10 +12,23 @@ A universal research workflow kit bridging vibe coding tools and Obsidian.
 
 khanote connects your vibe coding tools (Claude Code / Cursor / Codex / Gemini CLI / OpenCode) with Obsidian, using a pluggable research layer in between. SOPs are codified as skills — you only touch config.
 
+## Install
+
+```bash
+# pip
+pip install khanote
+
+# or Homebrew
+brew tap almost-khan/tap
+brew install khanote
+
+# or pipx (isolated)
+pipx install khanote
+```
+
 ## Quick Start
 
 ```bash
-pip install khanote
 khanote init --vault ~/your-obsidian-vault --tool claude-code --researcher perplexity
 ```
 

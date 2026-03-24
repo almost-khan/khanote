@@ -12,10 +12,23 @@
 
 khanote 将你的 vibe coding 工具（Claude Code / Cursor / Codex / Gemini CLI / OpenCode）与 Obsidian 连接起来，中间研究层可插拔。SOP 以 skills 形式沉淀，用户只需修改配置。
 
+## 安装
+
+```bash
+# pip
+pip install khanote
+
+# 或 Homebrew
+brew tap almost-khan/tap
+brew install khanote
+
+# 或 pipx（隔离环境）
+pipx install khanote
+```
+
 ## 快速开始
 
 ```bash
-pip install khanote
 khanote init --vault ~/your-obsidian-vault --tool claude-code --researcher perplexity
 ```
 
