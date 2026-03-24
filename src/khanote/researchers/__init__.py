@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from khanote.researchers.base import Researcher, ResearcherError
 
 if TYPE_CHECKING:
-    pass
+    from khanote.models.config import ResearcherConfig
 
 # Registry: maps researcher name → lazy import path
 # Each entry: "module.path:ClassName"
@@ -18,19 +18,27 @@ RESEARCHER_REGISTRY: dict[str, str] = {
 
 
 class ResearcherFactory:
-    """Instantiate researchers by name from the registry."""
+    """Instantiate researchers by name from the registry or config."""
 
     @staticmethod
-    def create(name: str, **kwargs) -> Researcher:
-        """Create and return a researcher instance by name.
+    def create(name: str, config: "ResearcherConfig | None" = None, **kwargs) -> Researcher:
+        """Create and return a researcher instance.
+
+        If config.type == 'http', creates a ConfigResearcher. Otherwise
+        falls back to the static registry lookup.
 
         Args:
-            name: Researcher name (must be in RESEARCHER_REGISTRY).
-            **kwargs: Passed to the researcher's __init__.
+            name: Researcher name.
+            config: Optional ResearcherConfig. Required for type=http.
+            **kwargs: Passed to the researcher's __init__ (built-in only).
 
         Raises:
             ResearcherError: If name not found or import fails.
         """
+        if config is not None and config.type == "http":
+            from khanote.researchers.config_researcher import ConfigResearcher
+            return ConfigResearcher(name, config)
+
         if name not in RESEARCHER_REGISTRY:
             available = ", ".join(RESEARCHER_REGISTRY.keys())
             raise ResearcherError(
