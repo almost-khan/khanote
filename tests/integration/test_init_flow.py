@@ -73,6 +73,21 @@ class TestInitFlow:
         assert result.exit_code == 0
 
 
+class TestPostInitFeedPrompt:
+    """T046: US5 — post-init feed prompt appears."""
+
+    def test_init_mentions_feed_setup(self, vault):
+        """After init completes, output should mention feeds or feed.add."""
+        result = runner.invoke(
+            app,
+            ["init", "--vault", str(vault), "--tool", "claude-code", "--researcher", "perplexity"],
+            input="n\n",  # decline feed setup
+        )
+        assert result.exit_code == 0, result.output
+        output = result.output.lower()
+        assert "feed" in output or "khanote.feed.add" in output
+
+
 class TestMultiToolInit:
     def test_init_two_tools_both_in_initialized_tools(self, vault):
         runner.invoke(
