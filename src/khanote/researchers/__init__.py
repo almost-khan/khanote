@@ -7,6 +7,7 @@ from khanote.researchers.base import Researcher, ResearcherError
 
 if TYPE_CHECKING:
     from khanote.models.config import ResearcherConfig
+    from khanote.registry.models import ResearcherRegistryEntry
 
 # Registry: maps researcher name → lazy import path
 # Each entry: "module.path:ClassName"
@@ -14,6 +15,12 @@ RESEARCHER_REGISTRY: dict[str, str] = {
     "perplexity": "khanote.researchers.perplexity:PerplexityResearcher",
     "arxiv": "khanote.researchers.arxiv:ArxivResearcher",
     "notebooklm": "khanote.researchers.notebooklm:NotebookLMResearcher",
+    "pubmed": "khanote.researchers.pubmed:PubMedResearcher",
+    "github": "khanote.researchers.github_researcher:GitHubResearcher",
+    "hackernews": "khanote.researchers.hackernews:HackerNewsResearcher",
+    "newsapi": "khanote.researchers.newsapi:NewsAPIResearcher",
+    "rss": "khanote.researchers.rss:RSSResearcher",
+    "producthunt": "khanote.researchers.producthunt:ProductHuntResearcher",
 }
 
 
@@ -57,6 +64,27 @@ class ResearcherFactory:
                 f"Failed to load researcher '{name}': {e}",
                 researcher=name,
             ) from e
+
+    @staticmethod
+    def from_registry_entry(entry: "ResearcherRegistryEntry", **kwargs) -> "Researcher":
+        """Create a researcher from a ResearcherRegistryEntry.
+
+        Args:
+            entry: Registry entry describing the researcher.
+            **kwargs: Additional kwargs passed to the researcher constructor.
+
+        Returns:
+            Researcher instance.
+
+        Raises:
+            ResearcherError: If the researcher cannot be created or is unavailable.
+        """
+        if not entry.available:
+            raise ResearcherError(
+                f"Researcher '{entry.name}' is not available (missing API key or disabled).",
+                researcher=entry.name,
+            )
+        return ResearcherFactory.create(entry.name, **kwargs)
 
     @staticmethod
     def available() -> list[str]:
