@@ -1,0 +1,80 @@
+perplexity:
+  type: builtin
+  domains: [general, news, q-and-a, finance, geopolitics, technology, business]
+  capabilities: [search, analyze]
+  description: "Real-time web search and Q&A. Best for current events, general research, and broad queries across any domain."
+  priority: fallback
+  requires_key: true
+  env_var: PERPLEXITY_API_KEY
+
+arxiv:
+  type: builtin
+  domains: [academic, physics, mathematics, computer-science, ai, ml, economics]
+  capabilities: [search, analyze]
+  description: "Academic preprint search for physics, math, CS, AI/ML. Best for cutting-edge research papers and technical topics."
+  priority: specialized
+  requires_key: false
+  env_var: null
+
+pubmed:
+  type: builtin
+  domains: [medical, biomedical, health, biology, clinical-research, pharmacology]
+  capabilities: [search, analyze]
+  description: "NCBI PubMed database for biomedical and health sciences literature. Best for medical research, drug studies, clinical trials."
+  priority: specialized
+  requires_key: false
+  env_var: null
+
+github:
+  type: builtin
+  domains: [software, open-source, repositories, coding, developer-tools, technology]
+  capabilities: [search, analyze]
+  description: "GitHub repository search. Best for finding open-source projects, libraries, and developer tools by topic."
+  priority: specialized
+  requires_key: false
+  env_var: GITHUB_TOKEN
+
+hackernews:
+  type: builtin
+  domains: [technology, startups, programming, ai, business, science, society]
+  capabilities: [search, analyze]
+  description: "Hacker News Algolia search. Best for tech community discussions, startup news, and programming topics."
+  priority: specialized
+  requires_key: false
+  env_var: null
+
+newsapi:
+  type: builtin
+  domains: [news, current-events, business, politics, finance, sports, entertainment]
+  capabilities: [search, analyze]
+  description: "NewsAPI aggregator for news articles from thousands of sources. Best for breaking news and journalism."
+  priority: specialized
+  requires_key: true
+  env_var: NEWSAPI_KEY
+
+rss:
+  type: builtin
+  domains: [blogs, news, podcasts, technology, general, custom]
+  capabilities: [search, analyze]
+  description: "RSS/Atom feed reader. Best for following specific blogs, publications, and content creators via feed URL."
+  priority: specialized
+  requires_key: false
+  env_var: null
+
+producthunt:
+  type: builtin
+  domains: [products, startups, saas, apps, technology, ai-tools, developer-tools]
+  capabilities: [search, analyze]
+  description: "Product Hunt API for discovering new products and startups. Best for product trends and launch tracking."
+  priority: specialized
+  requires_key: true
+  env_var: PRODUCTHUNT_TOKEN
+
+notebooklm:
+  type: builtin
+  domains: [documents, synthesis, academic, notes, general]
+  capabilities: [ingest, analyze, generate]
+  description: "Google NotebookLM for document ingestion and synthesis. Best for analyzing and synthesizing long documents."
+  priority: specialized
+  requires_key: true
+  env_var: GOOGLE_API_KEY
