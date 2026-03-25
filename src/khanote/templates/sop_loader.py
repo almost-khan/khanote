@@ -1,9 +1,11 @@
 """SOP prompt template loader — load and fill SOP templates for ConfigResearcher."""
 from __future__ import annotations
 
-import re
-import string
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from khanote.preferences.models import Preferences
 
 _DEFAULT_SOP_DIR = Path(__file__).parent / "sop"
 
@@ -36,6 +38,18 @@ class SopLoader:
     def fill_string(self, template: str, **kwargs: str) -> str:
         """Fill placeholders in an arbitrary template string."""
         return fill_string(template, **kwargs)
+
+    def fill_with_preferences(
+        self, capability: str, prefs: "Preferences", **kwargs: str
+    ) -> str:
+        """Load template for *capability*, inject personalization block from *prefs*, then fill.
+
+        Reads user preferences, builds the personalization block, and injects it as
+        {personalization_instructions} before filling remaining placeholders.
+        """
+        from khanote.preferences.personalization import build_personalization_block
+        block = build_personalization_block(prefs)
+        return self.fill(capability, personalization_instructions=block, **kwargs)
 
 
 def _strip_frontmatter(content: str) -> str:
