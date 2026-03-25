@@ -212,7 +212,6 @@ class ConfigResearcher:
                 resp.raise_for_status()
             except httpx.HTTPStatusError as e:
                 raise ResearcherError(f"HTTP {e.response.status_code}", researcher=self.name) from e
-        data = resp.json()
         return {"source_count": len(sources), "indexed_ids": [str(i) for i in range(len(sources))]}
 
     def _call_analyze_endpoint(self, endpoint: EndpointConfig, query: str | None, **kwargs) -> dict:
