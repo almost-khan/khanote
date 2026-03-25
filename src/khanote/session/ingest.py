@@ -5,7 +5,6 @@ import re
 import shutil
 from pathlib import Path
 
-import yaml
 
 from khanote.researchers.base import ResearcherError
 

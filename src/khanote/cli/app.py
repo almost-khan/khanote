@@ -18,6 +18,13 @@ app.add_typer(researcher_app, name="researcher")
 
 feed_app = typer.Typer(help="Manage research feeds.", no_args_is_help=True)
 app.add_typer(feed_app, name="feed")
+
+discover_app = typer.Typer(help="Manage discover feedback (like/dislike).", no_args_is_help=True)
+app.add_typer(discover_app, name="discover")
+
+preferences_app = typer.Typer(help="Manage user preferences.", no_args_is_help=True)
+app.add_typer(preferences_app, name="preferences")
+
 console = Console()
 
 
@@ -139,6 +146,36 @@ def _feed_remove(name: str = typer.Argument(None, help="Feed name to remove")) -
     """Remove a feed."""
     from khanote.cli.feed_commands import feed_remove
     feed_remove(name)
+
+
+@app.command("start-my-day")
+def start_my_day(
+    query: Optional[str] = typer.Argument(None, help="Optional research query for ad-hoc research mode."),
+) -> None:
+    """Run daily briefing (no args) or ad-hoc research (with query)."""
+    from khanote.cli.start_my_day import run_start_my_day
+    run_start_my_day(query=query)
+
+
+@discover_app.command("like")
+def _discover_like(item: str = typer.Argument(..., help="Topic or item to mark as liked.")) -> None:
+    """Mark a discover item as liked."""
+    from khanote.cli.discover_commands import discover_like
+    discover_like(item)
+
+
+@discover_app.command("dislike")
+def _discover_dislike(item: str = typer.Argument(..., help="Topic or item to mark as disliked.")) -> None:
+    """Mark a discover item as disliked."""
+    from khanote.cli.discover_commands import discover_dislike
+    discover_dislike(item)
+
+
+@preferences_app.command("show")
+def _preferences_show() -> None:
+    """Show current preferences in a formatted table."""
+    from khanote.cli.preferences_commands import preferences_show
+    preferences_show()
 
 
 if __name__ == "__main__":

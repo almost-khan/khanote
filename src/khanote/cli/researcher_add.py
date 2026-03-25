@@ -10,7 +10,7 @@ from pathlib import Path
 
 import yaml
 
-from khanote.models.config import Config, EndpointConfig, ResearcherConfig
+from khanote.models.config import EndpointConfig, ResearcherConfig
 
 
 def add_researcher_to_config(

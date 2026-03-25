@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
 
 from khanote.feeds.manager import FeedManager
 from khanote.models.feed import Feed

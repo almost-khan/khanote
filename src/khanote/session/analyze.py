@@ -4,7 +4,6 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-from khanote.researchers.base import ResearcherError
 
 _PACKAGE_DIR = Path(__file__).parent.parent
 _RESEARCH_NOTE_TEMPLATE = _PACKAGE_DIR / "templates" / "research-note.md"

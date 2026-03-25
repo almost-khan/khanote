@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-from khanote.models.session import Session, SessionStatus
+from khanote.models.session import Session
 
 _PACKAGE_DIR = Path(__file__).parent.parent
 _SESSION_TEMPLATE = _PACKAGE_DIR / "templates" / "_session.md"
