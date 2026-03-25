@@ -23,6 +23,19 @@ Ask: "Would you like to create a new feed, or copy settings from an existing one
 Ask: "Which researcher should this feed use?"
 Show the list of available researchers from `config.yaml`.
 
+**Built-in researchers available:**
+| Researcher | Best for | Key required? |
+|-----------|----------|--------------|
+| `perplexity` | General queries, current events, Q&A | Yes (PERPLEXITY_API_KEY) |
+| `arxiv` | Academic papers (CS, AI, math, physics) | No |
+| `pubmed` | Medical/biomedical literature | No |
+| `github` | Open-source repositories and tools | No (optional GITHUB_TOKEN) |
+| `hackernews` | Tech community discussions, startups | No |
+| `newsapi` | News articles from thousands of sources | Yes (NEWSAPI_KEY) |
+| `rss` | Any RSS/Atom feed by URL | No |
+| `producthunt` | New products and startup launches | Yes (PRODUCTHUNT_TOKEN) |
+| `notebooklm` | Document ingestion and synthesis | Yes (GOOGLE_API_KEY) |
+
 ### Step 3: Query
 Ask: "What topic or query should this feed search for?"
 Free text — user describes their interest in natural language.

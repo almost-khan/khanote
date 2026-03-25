@@ -1,7 +1,6 @@
 """Copy skills from SSOT to tool-native directories."""
 from __future__ import annotations
 
-import shutil
 from pathlib import Path
 
 from khanote.models.tool import TOOL_CONFIG, ToolConfig

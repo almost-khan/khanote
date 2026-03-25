@@ -10,7 +10,6 @@ from rich.panel import Panel
 
 from khanote.distribution.copier import SkillCopier
 from khanote.distribution.entry_file import EntryFileUpdater
-from khanote.models.tool import TOOL_CONFIG
 
 console = Console()
 
@@ -102,14 +101,73 @@ def run_init(
         yaml.dump(config_data, f, default_flow_style=False, allow_unicode=True)
     console.print("[green]✓[/green] config.yaml written")
 
+    # Step 6: Collect preferences (language, role, interests) — new in spec-003
+    _collect_preferences(khanote_dir, config_file)
+
     console.print(
         Panel(
             f"[bold green]khanote initialized![/bold green]\n\n"
             f"Vault: {vault_path}\n"
             f"Tool: {tool_name}\n"
             f"Researcher: {researcher_name}\n\n"
-            f"Run [bold]/khanote.research.start <topic>[/bold] to begin.\n\n"
-            f"[dim]Tip: Set up a daily research feed with [bold]/khanote.feed.add[/bold][/dim]",
+            f"Run [bold]khanote start-my-day[/bold] for your daily briefing.\n"
+            f"Run [bold]/khanote.start-my-day[/bold] inside your vibe coding tool.\n\n"
+            f"[dim]Tip: Edit preferences.yaml to customize language, depth, and tone.[/dim]",
             title="khanote init",
         )
     )
+
+
+def _collect_preferences(khanote_dir: Path, config_file: Path) -> None:
+    """Collect user preferences interactively and write preferences.yaml + starter feeds.
+
+    This function is called after config.yaml is written. It:
+    1. Prompts for language, role, and interests
+    2. Writes preferences.yaml
+    3. Selects and writes starter feeds to config.yaml
+    4. API key prompts are optional and skippable
+    """
+    import typer
+    from khanote.preferences.loader import PreferencesLoader
+    from khanote.preferences.models import Preferences
+
+    console.print("\n[bold cyan]Setting up your preferences...[/bold cyan]")
+    console.print("[dim](Press Enter to accept defaults, Ctrl+C to skip)[/dim]\n")
+
+    try:
+        # Language
+        language = typer.prompt("Output language (BCP 47 tag)", default="en-US")
+
+        # Role
+        console.print("Available roles: developer, pm, researcher, mixed")
+        role = typer.prompt("Your role", default="mixed")
+        if role not in ("developer", "pm", "researcher", "mixed"):
+            console.print(f"[yellow]Unknown role '{role}', using 'mixed'[/yellow]")
+            role = "mixed"
+
+        # Interests (comma-separated)
+        console.print("Interests help select starter feeds.")
+        console.print("Examples: ai, web, devops, security, medical, climate, fintech, saas")
+        interests_str = typer.prompt("Your interests (comma-separated, or Enter to skip)", default="")
+        interests = [i.strip() for i in interests_str.split(",") if i.strip()] if interests_str else []
+
+        # Write preferences.yaml
+        prefs_loader = PreferencesLoader(khanote_dir)
+        try:
+            prefs = Preferences(language=language, role=role, interests=interests)
+        except Exception:
+            prefs = Preferences(role=role, interests=interests)
+        prefs_loader.save_preferences(prefs)
+        console.print("[green]✓[/green] preferences.yaml written")
+
+        # Write starter feeds if interests provided
+        if interests or role != "mixed":
+            feeds = prefs_loader.select_starter_feeds(role=role, interests=interests or ["general"])
+            if feeds:
+                prefs_loader.write_starter_feeds_to_config(config_file, feeds)
+                console.print(f"[green]✓[/green] {len(feeds)} starter feed(s) added to config.yaml")
+            else:
+                console.print("[dim]No starter feeds matched your profile — add feeds with khanote feed add[/dim]")
+
+    except (KeyboardInterrupt, Exception):
+        console.print("\n[dim]Preferences setup skipped. Edit preferences.yaml manually later.[/dim]")

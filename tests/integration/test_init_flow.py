@@ -1,7 +1,6 @@
 """Integration tests for khanote init flow (TDD)."""
 from __future__ import annotations
 
-from pathlib import Path
 
 import pytest
 import yaml

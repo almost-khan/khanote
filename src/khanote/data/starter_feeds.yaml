@@ -1,0 +1,227 @@
+developer:
+  ai:
+    - name: ai-papers
+      researcher: arxiv
+      query: "artificial intelligence agents"
+      frequency: daily
+      keywords: [agent, llm, transformer, foundation-model]
+    - name: ai-trending
+      researcher: hackernews
+      query: "AI machine learning"
+      frequency: daily
+      keywords: []
+    - name: ai-tools
+      researcher: github
+      query: "AI agents LLM"
+      frequency: daily
+      keywords: []
+  web:
+    - name: web-tech-news
+      researcher: hackernews
+      query: "web development frontend backend"
+      frequency: daily
+      keywords: []
+    - name: web-frameworks
+      researcher: github
+      query: "web framework javascript typescript"
+      frequency: daily
+      keywords: []
+  devops:
+    - name: devops-news
+      researcher: hackernews
+      query: "devops kubernetes cloud infrastructure"
+      frequency: daily
+      keywords: []
+    - name: devops-tools
+      researcher: github
+      query: "devops kubernetes helm terraform"
+      frequency: daily
+      keywords: []
+  security:
+    - name: security-news
+      researcher: hackernews
+      query: "cybersecurity vulnerability exploit"
+      frequency: daily
+      keywords: []
+    - name: security-research
+      researcher: arxiv
+      query: "computer security cryptography"
+      frequency: daily
+      keywords: []
+  general:
+    - name: tech-news
+      researcher: hackernews
+      query: ""
+      frequency: daily
+      keywords: []
+    - name: new-developer-tools
+      researcher: github
+      query: "developer tools productivity"
+      frequency: daily
+      keywords: []
+
+pm:
+  ai:
+    - name: ai-product-news
+      researcher: hackernews
+      query: "AI product launch"
+      frequency: daily
+      keywords: []
+    - name: ai-new-tools
+      researcher: producthunt
+      query: "AI productivity"
+      frequency: daily
+      keywords: []
+  fintech:
+    - name: fintech-news
+      researcher: newsapi
+      query: "fintech regulation banking"
+      frequency: daily
+      keywords: []
+    - name: new-fintech-products
+      researcher: producthunt
+      query: "finance payments"
+      frequency: daily
+      keywords: []
+  saas:
+    - name: saas-news
+      researcher: newsapi
+      query: "SaaS B2B software product launch"
+      frequency: daily
+      keywords: []
+    - name: new-saas-products
+      researcher: producthunt
+      query: "SaaS productivity tools"
+      frequency: daily
+      keywords: []
+  health:
+    - name: health-tech-news
+      researcher: newsapi
+      query: "digital health healthtech wearables"
+      frequency: daily
+      keywords: []
+    - name: health-research
+      researcher: pubmed
+      query: "digital health intervention"
+      frequency: daily
+      keywords: []
+  general:
+    - name: product-launches
+      researcher: producthunt
+      query: ""
+      frequency: daily
+      keywords: []
+    - name: business-news
+      researcher: newsapi
+      query: "startup venture capital product management"
+      frequency: daily
+      keywords: []
+
+researcher:
+  ai:
+    - name: ai-papers
+      researcher: arxiv
+      query: "artificial intelligence agents reasoning"
+      frequency: daily
+      keywords: []
+    - name: ai-pubmed
+      researcher: pubmed
+      query: "artificial intelligence healthcare"
+      frequency: daily
+      keywords: []
+  medical:
+    - name: medical-papers
+      researcher: pubmed
+      query: "clinical trial randomized controlled"
+      frequency: daily
+      keywords: []
+    - name: medical-news
+      researcher: newsapi
+      query: "medical research breakthrough clinical"
+      frequency: daily
+      keywords: []
+  climate:
+    - name: climate-papers
+      researcher: arxiv
+      query: "climate change carbon emissions sustainability"
+      frequency: daily
+      keywords: []
+    - name: climate-news
+      researcher: newsapi
+      query: "climate change environment sustainability"
+      frequency: daily
+      keywords: []
+  social-science:
+    - name: social-papers
+      researcher: arxiv
+      query: "social science economics behavioral"
+      frequency: daily
+      keywords: []
+    - name: social-news
+      researcher: newsapi
+      query: "social science research survey"
+      frequency: daily
+      keywords: []
+  general:
+    - name: research-news
+      researcher: newsapi
+      query: "scientific research discovery breakthrough"
+      frequency: daily
+      keywords: []
+    - name: preprints
+      researcher: arxiv
+      query: "machine learning data science"
+      frequency: daily
+      keywords: []
+
+mixed:
+  ai:
+    - name: ai-papers
+      researcher: arxiv
+      query: "artificial intelligence"
+      frequency: daily
+      keywords: []
+    - name: ai-news
+      researcher: hackernews
+      query: "AI machine learning"
+      frequency: daily
+      keywords: []
+  technology:
+    - name: tech-news
+      researcher: hackernews
+      query: "technology"
+      frequency: daily
+      keywords: []
+    - name: new-tech-products
+      researcher: producthunt
+      query: "technology productivity"
+      frequency: daily
+      keywords: []
+  health:
+    - name: health-research
+      researcher: pubmed
+      query: "health wellness lifestyle"
+      frequency: daily
+      keywords: []
+    - name: health-news
+      researcher: newsapi
+      query: "health wellness"
+      frequency: daily
+      keywords: []
+  finance:
+    - name: finance-news
+      researcher: newsapi
+      query: "economy finance investing"
+      frequency: daily
+      keywords: []
+  general:
+    - name: daily-news
+      researcher: newsapi
+      query: "trending news"
+      frequency: daily
+      keywords: []
+    - name: hacker-news
+      researcher: hackernews
+      query: ""
+      frequency: daily
+      keywords: []

@@ -1,7 +1,6 @@
 """NotebookLM researcher — experimental, wraps notebooklm-py."""
 from __future__ import annotations
 
-from khanote.researchers.base import ResearcherError
 
 
 class NotebookLMResearcher:

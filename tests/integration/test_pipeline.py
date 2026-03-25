@@ -1,7 +1,6 @@
 """Integration tests for full pipeline orchestration (TDD)."""
 from __future__ import annotations
 
-from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest

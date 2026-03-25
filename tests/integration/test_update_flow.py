@@ -1,10 +1,8 @@
 """Integration tests for khanote update flow (TDD)."""
 from __future__ import annotations
 
-from pathlib import Path
 
 import pytest
-import yaml
 from typer.testing import CliRunner
 
 from khanote.cli.app import app

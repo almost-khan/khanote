@@ -18,7 +18,7 @@ def check_version(khanote_dir: Path | None = None) -> None:
     Silently no-ops on any error.
     """
     try:
-        import httpx
+        import httpx  # noqa: F401
     except ImportError:
         return
 

@@ -1,8 +1,7 @@
 """Integration tests for feed add and management flows (T033, T040)."""
 from __future__ import annotations
 
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 import yaml

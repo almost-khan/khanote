@@ -1,7 +1,6 @@
 """Tests for NotebookLM researcher stubs (TDD — experimental status)."""
 from __future__ import annotations
 
-import pytest
 
 from khanote.researchers.notebooklm import NotebookLMResearcher
 

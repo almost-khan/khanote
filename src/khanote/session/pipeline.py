@@ -106,7 +106,7 @@ class PipelineOrchestrator:
                 return result
         elif sources and not _researcher_supports(self.researcher, "ingest"):
             result["warnings"].append(
-                f"Researcher does not support 'ingest' — skipping source ingestion."
+                "Researcher does not support 'ingest' — skipping source ingestion."
             )
 
         # Step 3: Analyze (T025: skip if capability not declared)
