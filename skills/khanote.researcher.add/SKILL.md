@@ -1,102 +1,46 @@
 # khanote.researcher.add
 
-Add a custom HTTP researcher to khanote — no code required. All configuration through conversational prompts.
+You are helping the user connect a new data source (API) to khanote.
 
-## When to use
+## Instructions
 
-Run this skill when the user wants to connect a new data source (API) to khanote without writing code. Examples:
-- "I want to use the Exa Search API for research"
-- "Can I add a custom API to khanote?"
-- "I need to search using [some API]"
+Walk the user through these steps conversationally — ask one question at a time.
 
-## Guided Flow (9 steps)
-
-Follow these steps in order. Use natural language prompts — NO CLI flags.
-
-### Step 1: Intent
+### Step 1: Describe the data source
 Ask: "Describe the data source you want to connect. For example: 'I want to use Exa Search API to find research papers.'"
+Extract: API name, likely capabilities, and domain.
 
-→ Extract: API name, likely capabilities, domain
+### Step 2: Permanent or session-only?
+Ask: "Save this researcher permanently for all future sessions, or just for this session?"
+- Permanent → write to `config.yaml`
+- Session only → write to `.khanote/sessions/{slug}/researcher.yaml`
 
-### Step 2: Persistence
-Ask: "Would you like to save this researcher permanently, or use it just for this session?"
-- Permanent → will write to config.yaml at the end
-- Session only → will write to `.khanote/sessions/<slug>/researcher.yaml`
-
-### Step 3: API Configuration
-Ask:
-1. "What's the API endpoint URL?"
+### Step 3: API configuration
+Ask these three questions:
+1. "What is the API endpoint URL?"
 2. "How does this API authenticate? (API key in header, Bearer token, or no auth)"
-3. "Do you have an API key? (You can also set it as an environment variable like `${EXA_API_KEY}`)"
-
-→ Configure headers accordingly
+3. "Do you have an API key? You can also use an environment variable like `${MY_API_KEY}`."
 
 ### Step 4: Capabilities
-Ask: "What can this API do? Select all that apply:
-- Search for information
-- Ingest/index documents
-- Analyze content
-- Generate content"
+Ask: "What can this API do? Select all that apply: search, ingest, analyze, generate."
+Require at least one capability.
 
-→ Populates `capabilities` list. Require at least one.
+### Step 5: Test the connection
+Run `khanote researcher add` or call the API with a test request to verify the key and URL.
+- Success: tell the user the connection works and show the response latency.
+- Failure: show the error and ask: "Save anyway as unavailable? (yes/no)"
 
-### Step 5: Response Mapping
-For each declared capability with an endpoint:
-Ask: "When you call this API, what does the response look like? Paste a sample response if you have one."
+### Step 6: Confirm and save
+Show a summary of the researcher configuration and ask: "Save this researcher? (yes/no)"
+- Yes: write to `config.yaml` (permanent) or session file.
+- No: discard and exit cleanly.
 
-→ Auto-generate `response_mapping` from sample JSON. If no sample: "I'll use sensible defaults."
-
-### Step 6: SOP Templates
-For capabilities WITHOUT an endpoint:
-Ask: "This researcher doesn't have a direct [capability] endpoint. Want to customize the prompt template, or use the default?"
-
-- Default → use built-in SOP template from `templates/sop/`
-- Custom → ask user to describe what it should produce, generate SOP prompt
-
-### Step 7: Connectivity Test
-Run `khanote researcher add` internally or use `ConfigResearcher.test_connectivity()`.
-Report: success (latency) or failure (error details).
-
-If failed: "The API test failed. Check your URL/key. Save anyway (marked unavailable)? (yes/no)"
-
-### Step 8: Confirmation
-Show summary:
-```
-Researcher: [name]
-Type: http
-Capabilities: [list]
-Endpoints: [caps with endpoints]
-SOP fallbacks: [caps with SOP only]
-API key: [masked]
-```
-Ask: "Save this researcher? (yes/no)"
-
-→ Yes: call `add_researcher_to_config()` or `add_researcher_to_session()`
-→ No: discard, clean exit
-
-### Step 9: Feed Prompt (permanent researchers only)
-Ask: "Would you like to create a feed based on this researcher? A feed runs recurring searches automatically. (yes/no)"
-
-→ Yes: proceed with `/khanote.feed.add` (researcher pre-selected)
-→ No: done
-
-## Implementation
-
-The underlying logic is in `src/khanote/cli/researcher_add.py`:
-- `add_researcher_to_config(config_path, name, researcher_config)` — permanent
-- `add_researcher_to_session(session_dir, name, researcher_config)` — session-scoped
-- `promote_session_researcher(session_dir, config_path)` — post-session promotion
-- `discard_session_researcher(session_dir)` — decline cleanup
-
-## Error Handling
-
-- Invalid URL → retry the URL prompt with error message
-- No capabilities selected → explain that at least one is required, re-prompt
-- User cancels at any step → clean exit, no partial config written
-- Connectivity test fails → offer to save as unavailable
+### Step 7: Offer to create a feed (permanent researchers only)
+Ask: "Would you like to create a recurring feed using this researcher? (yes/no)"
+- Yes: proceed with `/khanote.feed.add` with this researcher pre-selected.
+- No: done.
 
 ## Notes
 
-- All configuration through conversational prompts — no CLI flags ever
-- SOP prompt templates only execute inside vibe coding tools (skill mode)
-- Running analysis via a SOP-backed researcher through standalone CLI will show a message directing to skill mode
+- All configuration is done through this conversation — no CLI flags required.
+- Your config is at `{vault_path}/.khanote/config.yaml`.

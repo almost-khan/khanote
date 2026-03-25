@@ -1,84 +1,38 @@
 # khanote.feed.add
 
-Add a recurring research feed to khanote — no code required. All configuration through conversational prompts.
+You are helping the user add a new recurring research feed.
 
-## When to use
+## Instructions
 
-Run this skill when the user wants to:
-- Set up a daily research feed for a topic (e.g., "I want daily updates on AI agents")
-- Copy an existing feed with different parameters
-- Create a feed after adding a new researcher
+Walk the user through these steps conversationally — ask one question at a time.
 
-## Guided Flow (7 steps)
-
-Follow these steps in order. Use natural language prompts — NO CLI flags.
-
-### Step 1: New or Copy?
+### Step 1: New or copy?
 Ask: "Would you like to create a new feed, or copy settings from an existing one?"
+- If copy: Read `{vault_path}/.khanote/config.yaml`, list the existing feeds, let the user choose one, pre-fill all fields, and skip to Step 5.
 
-- New → proceed to Step 2
-- Copy → show list of existing feeds, user selects one, pre-fill all fields, jump to Step 5 for review
+### Step 2: Choose a researcher
+Read `{vault_path}/.khanote/config.yaml` to find available researchers. Show the list and ask which one to use. Built-in options include: `arxiv`, `perplexity`, `newsapi`, `hackernews`, `rss`, `producthunt`, `pubmed`, `notebooklm`.
 
-### Step 2: Select Researcher
-Ask: "Which researcher should this feed use?"
-Show the list of available researchers from `config.yaml`.
+### Step 3: Set the query
+Ask: "What topic or question should this feed search for?" Accept natural language.
 
-**Built-in researchers available:**
-| Researcher | Best for | Key required? |
-|-----------|----------|--------------|
-| `perplexity` | General queries, current events, Q&A | Yes (PERPLEXITY_API_KEY) |
-| `arxiv` | Academic papers (CS, AI, math, physics) | No |
-| `pubmed` | Medical/biomedical literature | No |
-| `github` | Open-source repositories and tools | No (optional GITHUB_TOKEN) |
-| `hackernews` | Tech community discussions, startups | No |
-| `newsapi` | News articles from thousands of sources | Yes (NEWSAPI_KEY) |
-| `rss` | Any RSS/Atom feed by URL | No |
-| `producthunt` | New products and startup launches | Yes (PRODUCTHUNT_TOKEN) |
-| `notebooklm` | Document ingestion and synthesis | Yes (GOOGLE_API_KEY) |
+### Step 4: Add filters (optional)
+Ask: "Any keyword filters to narrow results? (comma-separated, or press Enter to skip)"
 
-### Step 3: Query
-Ask: "What topic or query should this feed search for?"
-Free text — user describes their interest in natural language.
-
-### Step 4: Filters (optional)
-Ask: "Any keyword filters? (comma-separated, or skip)"
-These narrow results — e.g., "llm, transformer, agent"
-
-### Step 5: Review
+### Step 5: Review and confirm
 Show a summary:
 ```
-Feed name: [auto-suggested from query]
+Name: [auto-suggested from topic]
 Researcher: [selected]
 Query: [query text]
 Keywords: [keywords or none]
 Frequency: daily
 ```
+Ask: "Does this look right? (yes / edit)"
 
-Ask: "Does this look right? (yes/edit)"
-
-### Step 6: Confirm Name
-Ask: "What would you like to name this feed? (e.g., 'llm-papers')"
-Name must be alphanumeric with hyphens only.
+### Step 6: Confirm the name
+Ask: "What would you like to name this feed? (e.g., 'ai-papers')" — must be alphanumeric with hyphens.
 
 ### Step 7: Save
-Call `FeedManager.add_feed()` and write to config.yaml.
-Report: "Feed 'llm-papers' added. Run /khanote.feed.list to see all feeds."
-
-## Implementation
-
-The underlying logic is in `src/khanote/feeds/manager.py`:
-- `FeedManager.add_feed(name, researcher, query, keywords, max_age_days)` — writes to config.yaml
-- `FeedManager.clone_feed(source_name, new_name)` — clone for "copy" flow
-- `FeedManager.list_feeds()` — returns all feeds for review/selection
-
-## Error Handling
-
-- Duplicate feed name → explain and suggest a different name
-- Researcher not found → suggest running /khanote.researcher.add first
-- No feeds exist when "copy" selected → fall back to new feed flow
-
-## Notes
-
-- All configuration through conversational prompts — no CLI flags ever
-- Feed frequency is `daily` for now (weekly/custom coming later)
-- After adding, consider running /khanote.feed.list to verify
+Run: `khanote feed add` with the collected parameters, or write directly to the `feeds` section of `config.yaml`.
+Tell the user: "Feed '{name}' added. Run `/khanote.feed.list` to see all your feeds."

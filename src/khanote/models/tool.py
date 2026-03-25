@@ -13,6 +13,7 @@ class ToolConfig(BaseModel, frozen=True):
     placeholder: str
     extension: str
     skills_dir: str | None = None  # Optional second target (e.g., claude-code)
+    restart_instruction: str = "restart.claude-code"  # i18n message key
 
 
 TOOL_CONFIG: dict[str, ToolConfig] = {
@@ -23,6 +24,7 @@ TOOL_CONFIG: dict[str, ToolConfig] = {
         format="markdown",
         placeholder="$ARGUMENTS",
         extension=".md",
+        restart_instruction="restart.claude-code",
     ),
     "cursor": ToolConfig(
         commands_dir=".cursor/rules/",
@@ -30,6 +32,7 @@ TOOL_CONFIG: dict[str, ToolConfig] = {
         format="markdown",
         placeholder="$ARGUMENTS",
         extension=".md",
+        restart_instruction="restart.cursor",
     ),
     "codex": ToolConfig(
         commands_dir=".agents/skills/",
@@ -37,6 +40,7 @@ TOOL_CONFIG: dict[str, ToolConfig] = {
         format="skill",
         placeholder="$ARGUMENTS",
         extension="/SKILL.md",
+        restart_instruction="restart.codex",
     ),
     "gemini-cli": ToolConfig(
         commands_dir=".gemini/commands/",
@@ -44,6 +48,7 @@ TOOL_CONFIG: dict[str, ToolConfig] = {
         format="toml",
         placeholder="{{args}}",
         extension=".toml",
+        restart_instruction="restart.gemini-cli",
     ),
     "opencode": ToolConfig(
         commands_dir=".opencode/commands/",
@@ -51,5 +56,6 @@ TOOL_CONFIG: dict[str, ToolConfig] = {
         format="markdown",
         placeholder="$ARGUMENTS",
         extension=".md",
+        restart_instruction="restart.opencode",
     ),
 }

@@ -1,19 +1,15 @@
 # khanote.feed.resume
 
-Resume a paused feed — it will be included in start-my-day again.
+You are resuming a paused research feed for the user.
 
-## When to use
+## Instructions
 
-Run this skill when the user wants to re-activate a paused feed.
-
-## Guided Flow
-
-1. Run `khanote feed list` to show all feeds (including paused ones).
-2. Ask the user which feed to resume (by name).
-3. Confirm: "Resume feed '[name]'? (yes/no)"
-4. Run `khanote feed resume [name]` — sets `active: true` in config.yaml.
-5. Confirm: "Feed '[name]' is now active."
+1. Read `{vault_path}/.khanote/config.yaml` and list all paused feeds (where `active: false`).
+2. Ask the user which feed they want to resume, if they have not already said.
+3. Confirm: "Resume feed '{name}'? (yes/no)"
+4. If yes, run: `khanote feed resume {name}` — this sets `active: true` in config.yaml.
+5. Tell the user: "Feed '{name}' is now active. It will run on your next `/khanote.start-my-day`."
 
 ## Notes
 
-- All configuration through conversational prompts — no CLI flags
+- If no feeds are paused, tell the user all feeds are already active.

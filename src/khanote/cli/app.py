@@ -1,7 +1,6 @@
 """Typer app with init/update/check subcommands."""
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Optional
 
 import typer
@@ -42,51 +41,22 @@ def main_callback(ctx: typer.Context) -> None:
 
 @app.command()
 def init(
-    vault: Optional[Path] = typer.Option(
-        None,
-        "--vault",
-        help="Path to your Obsidian vault.",
-        show_default=False,
-    ),
     tool: Optional[str] = typer.Option(
         None,
         "--tool",
         help="Vibe coding tool to initialize (claude-code, cursor, codex, gemini-cli, opencode).",
         show_default=False,
     ),
-    researcher: Optional[str] = typer.Option(
+    lang: Optional[str] = typer.Option(
         None,
-        "--researcher",
-        help="Default researcher to use (perplexity, arxiv, notebooklm).",
+        "--lang",
+        help="Language code (en, zh, ja, ko, fr). If omitted, wizard prompts for language.",
         show_default=False,
     ),
 ) -> None:
-    """Initialize khanote in your Obsidian vault."""
-    from khanote.models.tool import TOOL_CONFIG
-
-    # Interactive prompts for missing values
-    if vault is None:
-        vault_str = typer.prompt("Path to your Obsidian vault")
-        vault = Path(vault_str)
-
-    if not vault.exists():
-        console.print(f"[red]Error:[/red] Vault path does not exist: {vault}")
-        raise typer.Exit(1)
-
-    if tool is None:
-        available_tools = list(TOOL_CONFIG.keys())
-        console.print(f"Available tools: {', '.join(available_tools)}")
-        tool = typer.prompt("Which tool to initialize", default="claude-code")
-
-    if tool not in TOOL_CONFIG:
-        console.print(f"[red]Error:[/red] Unknown tool '{tool}'. Available: {', '.join(TOOL_CONFIG.keys())}")
-        raise typer.Exit(1)
-
-    if researcher is None:
-        researcher = typer.prompt("Default researcher", default="perplexity")
-
-    from khanote.cli.init import run_init
-    run_init(vault_path=vault, tool_name=tool, researcher_name=researcher)
+    """Set up khanote in the current directory."""
+    from khanote.cli.init import run_init_wizard
+    run_init_wizard(tool=tool, lang=lang)
 
 
 @app.command()
@@ -148,13 +118,21 @@ def _feed_remove(name: str = typer.Argument(None, help="Feed name to remove")) -
     feed_remove(name)
 
 
-@app.command("start-my-day")
+@app.command("start-my-day", hidden=True)
 def start_my_day(
-    query: Optional[str] = typer.Argument(None, help="Optional research query for ad-hoc research mode."),
+    query: Optional[str] = typer.Argument(None, help="Optional research query."),
 ) -> None:
-    """Run daily briefing (no args) or ad-hoc research (with query)."""
-    from khanote.cli.start_my_day import run_start_my_day
-    run_start_my_day(query=query)
+    """Redirect: start-my-day is now a skill, not a CLI command."""
+    from khanote.i18n import get_message
+    console.print(f"[yellow]{get_message('error.start_my_day_removed', 'en')}[/yellow]")
+    raise typer.Exit(1)
+
+
+@app.command()
+def status() -> None:
+    """Show khanote configuration status."""
+    from khanote.cli.status import run_status
+    run_status()
 
 
 @discover_app.command("like")
