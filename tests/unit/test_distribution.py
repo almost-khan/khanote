@@ -1,13 +1,11 @@
 """Tests for skill copier and entry file updater (TDD)."""
 from __future__ import annotations
 
-from pathlib import Path
 
 import pytest
 
 from khanote.distribution.copier import SkillCopier
 from khanote.distribution.entry_file import EntryFileUpdater
-from khanote.models.tool import TOOL_CONFIG
 
 
 @pytest.fixture

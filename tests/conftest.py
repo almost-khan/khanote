@@ -1,9 +1,6 @@
 """Shared pytest fixtures for khanote tests."""
 from __future__ import annotations
 
-from datetime import date
-from pathlib import Path
-from typing import Any
 from unittest.mock import MagicMock
 
 import pytest

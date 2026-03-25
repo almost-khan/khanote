@@ -1,7 +1,7 @@
 """Tests for Tool model and TOOL_CONFIG registry (TDD)."""
 import pytest
 
-from khanote.models.tool import ToolConfig, TOOL_CONFIG
+from khanote.models.tool import TOOL_CONFIG
 
 
 class TestToolConfigRegistry:

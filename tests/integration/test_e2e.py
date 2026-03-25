@@ -1,11 +1,9 @@
 """End-to-end integration test: init → start → ingest → analyze → save → verify vault output."""
 from __future__ import annotations
 
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
-import yaml
 from typer.testing import CliRunner
 
 from khanote.cli.app import app

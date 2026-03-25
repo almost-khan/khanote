@@ -1,6 +1,5 @@
 """Tests for Config Pydantic model (TDD — written before implementation)."""
 import os
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -8,9 +7,6 @@ import yaml
 
 from khanote.models.config import (
     Config,
-    ResearchConfig,
-    ResearcherConfig,
-    DomainConfig,
     FeedConfig,
     FeedFiltersConfig,
 )

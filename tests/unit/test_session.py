@@ -1,9 +1,8 @@
 """Tests for Session model and SessionManager (TDD — written before implementation)."""
 from datetime import date
 
-import pytest
-
 from khanote.models.session import Session, SessionStatus
+from khanote.session.manager import SessionManager
 
 
 class TestSessionModel:
@@ -76,10 +75,10 @@ sources_count: 3"""
         assert "&" not in slug
 
 
+
 # ============================================================
 # SessionManager tests (T033)
 # ============================================================
-from khanote.session.manager import SessionManager
 
 
 class TestSessionManager:
@@ -124,7 +123,7 @@ class TestSessionManager:
         mgr = SessionManager(vault_dir=tmp_path)
         khanote_dir = tmp_path / ".khanote"
         khanote_dir.mkdir()
-        session_dir = mgr.create("AI Agents")
+        mgr.create("AI Agents")
         pointer = khanote_dir / "current_session"
         assert pointer.exists()
         assert "AI-Agents" in pointer.read_text()

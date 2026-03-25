@@ -1,10 +1,8 @@
 """Tests for version checker (TDD)."""
 import json
 import time
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
-import pytest
 
 from khanote.cli.version import _is_newer, _read_cache, _write_cache, check_version
 
