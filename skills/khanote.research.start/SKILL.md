@@ -1,31 +1,32 @@
 # khanote.research.start
 
-Start a new research session for a topic.
+You are starting a new research session for the user.
 
-## Usage
+## Instructions
 
+1. Read `{vault_path}/.khanote/config.yaml` to find the vault path.
+2. Ask the user for the research topic if they have not already provided one.
+3. Create the session folder using today's date and a slug derived from the topic:
+   - Path: `{vault_path}/khanote/{YYYY-MM-DD}_{topic-slug}/`
+   - Example: `khanote/2026-03-25_AI-Agents-Overview/`
+4. Create these subdirectories inside the session folder:
+   - `sources/` — raw input files and URLs
+   - `research/` — structured analysis notes
+   - `synthesis/` — final synthesized output
+   - `artifacts/` — generated files (audio, PDF, etc.)
+5. Create `_session.md` in the session folder with this content:
+
+```markdown
+# Session: {topic}
+Date: {YYYY-MM-DD}
+Status: active
+
+## Sources
+(none yet)
+
+## Notes
 ```
-/khanote.research.start $ARGUMENTS
-```
 
-Where `$ARGUMENTS` is the research topic (e.g., "AI Agents Overview").
-
-## What this does
-
-1. Creates a dated session folder: `khanote/{YYYY-MM-DD}_{topic}/`
-2. Initializes subdirectories: `sources/`, `research/`, `synthesis/`, `artifacts/`
-3. Creates `_session.md` with session metadata
-4. Updates `.khanote/current_session` pointer
-5. Updates `khanote/_index.md` navigation
-
-## Options
-
-- `--session <path>`: Explicitly target an existing session instead of creating a new one
-
-## Example
-
-```
-/khanote.research.start AI Agents Overview
-```
-
-Creates: `khanote/2026-03-22_AI-Agents-Overview/`
+6. Write the session path to `{vault_path}/.khanote/current_session` so other skills know the active session.
+7. Update `{vault_path}/khanote/_index.md` — append a line linking to this session.
+8. Tell the user: "Session created at `{session_path}`. Use `/khanote.research.ingest` to add sources."

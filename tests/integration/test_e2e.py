@@ -16,7 +16,8 @@ runner = CliRunner()
 
 
 @pytest.fixture
-def vault(tmp_path):
+def vault(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
     return tmp_path
 
 
@@ -39,8 +40,8 @@ class TestEndToEnd:
         # Step 1: Init
         result = runner.invoke(
             app,
-            ["init", "--vault", str(vault), "--tool", "claude-code", "--researcher", "perplexity"],
-            input="y\n",
+            ["init", "--tool", "claude-code"],
+            input="\n\n\n\n\n\n\n",
         )
         assert result.exit_code == 0
         assert (vault / ".khanote").exists()

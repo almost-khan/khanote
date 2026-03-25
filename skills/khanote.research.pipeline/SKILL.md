@@ -1,31 +1,19 @@
 # khanote.research.pipeline
 
-Run a full research session in one command: start → ingest → analyze → save.
+You are running a full research pipeline: start → ingest → analyze → save.
 
-## Usage
+## Instructions
 
-```
-/khanote.research.pipeline $ARGUMENTS
-```
+1. Ask the user for the research topic if not already provided.
+2. Ask the user for sources to ingest (URLs, files, or text). Accept multiple sources.
+3. Run `/khanote.research.start` to create the session folder.
+4. Run `/khanote.research.ingest` to add all provided sources to the session.
+5. Run `/khanote.research.analyze` to extract findings and write structured notes.
+6. Run `/khanote.research.save` to synthesize and finalize the session.
+7. Show the user the executive summary from the synthesis and the path to the full report.
 
-Where `$ARGUMENTS` includes the topic and sources.
+## Notes
 
-## What this does
-
-1. Starts a new session for the topic
-2. Ingests all provided sources
-3. Runs analysis
-4. Saves and finalizes the session
-5. Optionally generates additional content (audio, PDF) with `--generate`
-
-## Options
-
-- `--topic <text>`: Research topic (required)
-- `--sources <urls/paths>`: One or more sources to ingest
-- `--generate <type>`: Generate additional output after save (e.g., audio, summary)
-
-## Example
-
-```
-/khanote.research.pipeline --topic "AI Agents" --sources https://arxiv.org/abs/2401.12345
-```
+- You can run each step individually if the user prefers fine-grained control.
+- If any step fails, tell the user which step failed and suggest how to recover.
+- Your config is at `{vault_path}/.khanote/config.yaml`.

@@ -1,22 +1,15 @@
 # khanote.update
 
-Update khanote skills to the latest version.
+You are updating khanote skills to the latest version.
 
-## Usage
+## Instructions
 
-```
-/khanote.update $ARGUMENTS
-```
+1. Run: `khanote update`
+2. This command checks PyPI for the latest khanote version, updates the SSOT skills in `.khanote/skills/`, and re-distributes updated skills to all initialized tools.
+3. Tell the user what changed — new skills added, existing skills updated, or "already up to date."
+4. If the update fails (network error, permission issue), show the error and suggest running `pip install --upgrade khanote` manually.
 
-## What this does
+## Notes
 
-1. Checks PyPI for the latest khanote version
-2. Updates the SSOT skills in `.khanote/skills/`
-3. Re-distributes updated skills to all initialized tools
-4. Reports what changed
-
-## Example
-
-```
-/khanote.update
-```
+- Your skills are stored at `{vault_path}/.khanote/skills/`.
+- After updating, your vibe coding tool may need to be restarted to pick up the new skill files.

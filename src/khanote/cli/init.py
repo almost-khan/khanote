@@ -1,173 +1,344 @@
-"""Init command: create .khanote/, distribute skills, update entry files, write config.yaml."""
+"""Init command: language-first interactive wizard for khanote setup."""
 from __future__ import annotations
 
 import shutil
 from pathlib import Path
+from typing import Optional
 
 import yaml
+import typer
 from rich.console import Console
 from rich.panel import Panel
 
 from khanote.distribution.copier import SkillCopier
 from khanote.distribution.entry_file import EntryFileUpdater
+from khanote.i18n import get_message
 
 console = Console()
 
 # Path to bundled skills (relative to this file: src/khanote/cli/ → skills/)
 _PACKAGE_DIR = Path(__file__).parent.parent
 _BUNDLED_SKILLS = _PACKAGE_DIR.parent.parent / "skills"  # repo root skills/
-# Fallback: installed package data
 _INSTALLED_SKILLS = _PACKAGE_DIR / "skills"
+
+_TOOL_NAMES = ["claude-code", "cursor", "codex", "gemini-cli", "opencode"]
+_ROLE_NAMES = ["developer", "pm", "researcher", "operations", "mixed"]
+_INTEREST_OPTIONS = [
+    "ai", "product", "market", "tech", "medical",
+    "finance", "sports", "climate", "security", "devops", "web", "saas",
+]
+_SUPPORTED_LANGUAGES = {"en", "zh", "ja", "ko", "fr"}
+
+# Language code → BCP-47 tag stored in preferences
+_LANG_TO_BCP47 = {
+    "en": "en-US", "zh": "zh-CN", "ja": "ja-JP", "ko": "ko-KR", "fr": "fr-FR",
+    "1": "en-US", "2": "zh-CN", "3": "ja-JP", "4": "ko-KR", "5": "fr-FR",
+}
+
+
+class WizardState:
+    """Holds wizard step order and built-in defaults."""
+
+    step_order = ["language", "tool", "role", "interests", "api_keys"]
+
+    defaults = {
+        "language": "en",
+        "tool": "claude-code",
+        "role": "mixed",
+        "interests": "",
+    }
 
 
 def _get_skills_dir() -> Path:
-    """Return path to skills SSOT directory."""
     if _BUNDLED_SKILLS.exists():
         return _BUNDLED_SKILLS
     if _INSTALLED_SKILLS.exists():
         return _INSTALLED_SKILLS
-    raise FileNotFoundError(
-        "Skills directory not found. Ensure khanote is installed correctly."
-    )
+    raise FileNotFoundError("Skills directory not found. Ensure khanote is installed correctly.")
 
 
-def run_init(
-    vault_path: Path,
-    tool_name: str,
-    researcher_name: str,
+def ensure_output_path(path: Path) -> None:
+    """Create output path if it does not exist."""
+    if not path.exists():
+        path.mkdir(parents=True, exist_ok=True)
+        console.print(f"[green]✓[/green] {get_message('wizard.path_created', 'en').format(path=path)}")
+
+
+def check_tool_installed(tool: str, base_dir: Path) -> Optional[str]:
+    """Return warning string if tool's commands dir is missing, else None."""
+    from khanote.models.tool import TOOL_CONFIG
+    cfg = TOOL_CONFIG.get(tool)
+    if cfg is None:
+        return None
+    expected = base_dir / cfg.commands_dir
+    if not expected.exists():
+        return get_message("wizard.tool_not_found", "en").format(tool=tool)
+    return None
+
+
+def load_existing_defaults(base_dir: Path) -> dict:
+    """Load current config/preferences as wizard defaults for re-init."""
+    defaults = dict(WizardState.defaults)
+    kdir = base_dir / ".khanote"
+
+    config_path = kdir / "config.yaml"
+    if config_path.exists():
+        try:
+            data = yaml.safe_load(config_path.read_text()) or {}
+            tools = data.get("initialized_tools", [])
+            if tools:
+                defaults["tool"] = tools[-1]
+            defaults["output_path"] = str(base_dir)
+        except Exception:
+            pass
+
+    prefs_path = kdir / "preferences.yaml"
+    if prefs_path.exists():
+        try:
+            prefs = yaml.safe_load(prefs_path.read_text()) or {}
+            if prefs.get("language"):
+                lang_tag = prefs["language"]
+                # Convert BCP-47 back to short code for wizard default
+                prefix = lang_tag.split("-")[0].split("_")[0].lower()
+                defaults["language"] = prefix if prefix in _SUPPORTED_LANGUAGES else "en"
+            if prefs.get("role"):
+                defaults["role"] = prefs["role"]
+            if prefs.get("interests"):
+                defaults["interests"] = ",".join(prefs["interests"])
+        except Exception:
+            pass
+
+    return defaults
+
+
+def _write_config_files(
+    output_path: Path,
+    tool: str,
+    language: str,
+    role: str,
+    interests: list[str],
+    api_keys: dict[str, str],
+    existing_config: dict,
 ) -> None:
-    """Execute the init flow.
+    """Write config.yaml, preferences.yaml, copy skills, update entry file.
 
-    1. Create .khanote/ structure
-    2. Copy skills SSOT to .khanote/skills/
-    3. Distribute skills to tool directory
-    4. Update tool entry file
-    5. Write config.yaml
+    Called only after ALL wizard inputs collected — atomic from caller's perspective.
     """
-    vault_path = vault_path.resolve()
-    khanote_dir = vault_path / ".khanote"
-    khanote_dir.mkdir(exist_ok=True)
+    kdir = output_path / ".khanote"
+    kdir.mkdir(exist_ok=True)
 
-    skills_ssot = khanote_dir / "skills"
-
-    # Step 1: Copy bundled skills to SSOT in vault
+    # Copy bundled skills to SSOT
     bundled = _get_skills_dir()
+    skills_ssot = kdir / "skills"
     if bundled != skills_ssot:
         if skills_ssot.exists():
             shutil.rmtree(skills_ssot)
         shutil.copytree(bundled, skills_ssot)
-    console.print("[green]✓[/green] Skills SSOT copied to .khanote/skills/")
 
-    # Step 2: Copy context.md template to .khanote/
+    # Copy context.md template
     context_src = _PACKAGE_DIR / "templates" / "context.md"
-    context_dst = khanote_dir / "context.md"
+    context_dst = kdir / "context.md"
     if context_src.exists():
         shutil.copy2(context_src, context_dst)
 
-    # Step 3: Distribute skills to tool directory
-    copier = SkillCopier(ssot_dir=skills_ssot, vault_dir=vault_path)
-    written = copier.copy_all(tool_name)
-    console.print(f"[green]✓[/green] {len(written)} skill(s) distributed to {tool_name}")
+    # Distribute skills to tool directory
+    copier = SkillCopier(ssot_dir=skills_ssot, vault_dir=output_path)
+    copier.copy_all(tool)
 
-    # Step 4: Update tool entry file
-    updater = EntryFileUpdater(vault_dir=vault_path)
-    entry = updater.add_reference(tool_name)
-    console.print(f"[green]✓[/green] Entry file updated: {entry.name}")
+    # Update tool entry file
+    updater = EntryFileUpdater(vault_dir=output_path)
+    updater.add_reference(tool)
 
-    # Step 5: Read existing config or create new one
-    config_file = khanote_dir / "config.yaml"
-    if config_file.exists():
-        with config_file.open("r") as f:
-            existing = yaml.safe_load(f) or {}
-        initialized_tools = existing.get("initialized_tools", [])
-        if tool_name not in initialized_tools:
-            initialized_tools.append(tool_name)
-        existing["initialized_tools"] = initialized_tools
-        config_data = existing
-    else:
-        config_data = {
-            "version": "0.1.0",
-            "vault_path": str(vault_path),
-            "initialized_tools": [tool_name],
-            "research": {
-                "default": researcher_name,
-                "researchers": {
-                    researcher_name: {"enabled": True},
-                },
-            },
-        }
+    # Build config.yaml — preserve existing feeds/researchers
+    config_data = dict(existing_config) if existing_config else {}
+    initialized_tools = config_data.get("initialized_tools", [])
+    if tool not in initialized_tools:
+        initialized_tools.append(tool)
+    config_data["version"] = config_data.get("version", "0.1.0")
+    config_data["vault_path"] = str(output_path)
+    config_data["initialized_tools"] = initialized_tools
+    if "research" not in config_data:
+        config_data["research"] = {"default": "arxiv", "researchers": {"arxiv": {"enabled": True}}}
 
-    with config_file.open("w") as f:
-        yaml.dump(config_data, f, default_flow_style=False, allow_unicode=True)
-    console.print("[green]✓[/green] config.yaml written")
+    # Add API keys to config
+    for researcher, key_val in api_keys.items():
+        if key_val:
+            config_data["research"].setdefault("researchers", {})[researcher] = {
+                "enabled": True,
+                "api_key": key_val,
+            }
+            if researcher == "perplexity":
+                config_data["research"]["default"] = "perplexity"
 
-    # Step 6: Collect preferences (language, role, interests) — new in spec-003
-    _collect_preferences(khanote_dir, config_file)
+    config_file = kdir / "config.yaml"
+    config_file.write_text(yaml.dump(config_data, default_flow_style=False, allow_unicode=True))
 
-    console.print(
-        Panel(
-            f"[bold green]khanote initialized![/bold green]\n\n"
-            f"Vault: {vault_path}\n"
-            f"Tool: {tool_name}\n"
-            f"Researcher: {researcher_name}\n\n"
-            f"Run [bold]khanote start-my-day[/bold] for your daily briefing.\n"
-            f"Run [bold]/khanote.start-my-day[/bold] inside your vibe coding tool.\n\n"
-            f"[dim]Tip: Edit preferences.yaml to customize language, depth, and tone.[/dim]",
-            title="khanote init",
-        )
-    )
-
-
-def _collect_preferences(khanote_dir: Path, config_file: Path) -> None:
-    """Collect user preferences interactively and write preferences.yaml + starter feeds.
-
-    This function is called after config.yaml is written. It:
-    1. Prompts for language, role, and interests
-    2. Writes preferences.yaml
-    3. Selects and writes starter feeds to config.yaml
-    4. API key prompts are optional and skippable
-    """
-    import typer
+    # Write preferences.yaml
     from khanote.preferences.loader import PreferencesLoader
     from khanote.preferences.models import Preferences
 
-    console.print("\n[bold cyan]Setting up your preferences...[/bold cyan]")
-    console.print("[dim](Press Enter to accept defaults, Ctrl+C to skip)[/dim]\n")
-
+    lang_bcp47 = _LANG_TO_BCP47.get(language, language)
     try:
-        # Language
-        language = typer.prompt("Output language (BCP 47 tag)", default="en-US")
+        prefs = Preferences(language=lang_bcp47, role=role, interests=interests)
+    except Exception:
+        prefs = Preferences(role=role, interests=interests)
 
-        # Role
-        console.print("Available roles: developer, pm, researcher, mixed")
-        role = typer.prompt("Your role", default="mixed")
-        if role not in ("developer", "pm", "researcher", "mixed"):
-            console.print(f"[yellow]Unknown role '{role}', using 'mixed'[/yellow]")
-            role = "mixed"
+    prefs_loader = PreferencesLoader(kdir)
+    prefs_loader.save_preferences(prefs)
 
-        # Interests (comma-separated)
-        console.print("Interests help select starter feeds.")
-        console.print("Examples: ai, web, devops, security, medical, climate, fintech, saas")
-        interests_str = typer.prompt("Your interests (comma-separated, or Enter to skip)", default="")
-        interests = [i.strip() for i in interests_str.split(",") if i.strip()] if interests_str else []
+    # Starter feeds
+    if interests or role != "mixed":
+        feeds = prefs_loader.select_starter_feeds(role=role, interests=interests or ["general"])
+        if feeds:
+            prefs_loader.write_starter_feeds_to_config(config_file, feeds)
 
-        # Write preferences.yaml
-        prefs_loader = PreferencesLoader(khanote_dir)
+
+def run_init_wizard(
+    tool: Optional[str] = None,
+    lang: Optional[str] = None,
+) -> None:
+    """Execute the language-first init wizard.
+
+    Installs in the current working directory (like speckit).
+    Collects all inputs before writing any files (Ctrl+C atomicity).
+    """
+    # Output is always the current working directory
+    resolved_output = Path.cwd().resolve()
+
+    # Detect re-init
+    existing_config: dict = {}
+    is_reinit = False
+    kdir = resolved_output / ".khanote"
+    if kdir.exists() and (kdir / "config.yaml").exists():
+        is_reinit = True
         try:
-            prefs = Preferences(language=language, role=role, interests=interests)
+            existing_config = yaml.safe_load((kdir / "config.yaml").read_text()) or {}
         except Exception:
-            prefs = Preferences(role=role, interests=interests)
-        prefs_loader.save_preferences(prefs)
-        console.print("[green]✓[/green] preferences.yaml written")
+            existing_config = {}
 
-        # Write starter feeds if interests provided
-        if interests or role != "mixed":
-            feeds = prefs_loader.select_starter_feeds(role=role, interests=interests or ["general"])
-            if feeds:
-                prefs_loader.write_starter_feeds_to_config(config_file, feeds)
-                console.print(f"[green]✓[/green] {len(feeds)} starter feed(s) added to config.yaml")
+    # Load defaults (from existing config for re-init, or built-in)
+    if is_reinit:
+        defaults = load_existing_defaults(resolved_output)
+    else:
+        defaults = dict(WizardState.defaults)
+
+    # ── Step 1: Language (always shown; shown in ALL languages simultaneously) ──
+    if lang:
+        selected_lang = lang.split("-")[0].split("_")[0].lower()
+    else:
+        console.print(
+            "\n[bold]khanote setup[/bold]\n"
+            + get_message("wizard.language_prompt", "en") + " / "
+            + get_message("wizard.language_prompt", "zh") + " / "
+            + get_message("wizard.language_prompt", "ja") + "\n"
+            + get_message("wizard.language_choices", "en")
+        )
+        lang_input = typer.prompt(
+            get_message("wizard.language_prompt", "en"),
+            default=defaults.get("language", "en"),
+        ).strip().lower()
+        # Map numeric choices to codes
+        code_map = {"1": "en", "2": "zh", "3": "ja", "4": "ko", "5": "fr"}
+        selected_lang = code_map.get(lang_input, lang_input.split("-")[0].split("_")[0])
+
+    # Effective language for subsequent prompts (fallback to en if unsupported)
+    eff_lang = selected_lang if selected_lang in _SUPPORTED_LANGUAGES else "en"
+
+    # ── Re-init notice ─────────────────────────────────────────────────────────
+    if is_reinit:
+        console.print(f"\n[yellow]{get_message('wizard.reinit_notice', eff_lang)}[/yellow]")
+
+    # ── Step 2: Tool ───────────────────────────────────────────────────────────
+    if tool:
+        selected_tool = tool
+    else:
+        console.print(f"\n{get_message('wizard.tool_choices', eff_lang)}")
+        tool_input = typer.prompt(
+            get_message("wizard.tool_prompt", eff_lang),
+            default=defaults.get("tool", "claude-code"),
+        ).strip().lower()
+        tool_map = {"1": "claude-code", "2": "cursor", "3": "codex", "4": "gemini-cli", "5": "opencode"}
+        selected_tool = tool_map.get(tool_input, tool_input)
+        if selected_tool not in _TOOL_NAMES:
+            selected_tool = "claude-code"
+
+    # ── Step 3: Role ───────────────────────────────────────────────────────────
+    console.print(f"\n{get_message('wizard.role_choices', eff_lang)}")
+    role_input = typer.prompt(
+        get_message("wizard.role_prompt", eff_lang),
+        default=defaults.get("role", "mixed"),
+    ).strip().lower()
+    role_map = {"1": "developer", "2": "pm", "3": "researcher", "4": "operations", "5": "mixed"}
+    selected_role = role_map.get(role_input, role_input)
+    if selected_role not in _ROLE_NAMES:
+        selected_role = "mixed"
+
+    # ── Step 4: Interests ──────────────────────────────────────────────────────
+    console.print(f"\n[dim]{get_message('wizard.interests_hint', eff_lang)}[/dim]")
+    interests_str = typer.prompt(
+        get_message("wizard.interests_prompt", eff_lang),
+        default=defaults.get("interests", ""),
+    ).strip()
+    selected_interests = [i.strip().lower() for i in interests_str.split(",") if i.strip()] if interests_str else []
+
+    # ── Step 5: API Keys ───────────────────────────────────────────────────────
+    console.print(f"\n{get_message('wizard.apikey_prompt', eff_lang)}")
+    api_keys: dict[str, str] = {}
+
+    api_key_fields = [
+        ("perplexity", "PERPLEXITY_API_KEY"),
+        ("newsapi", "NEWSAPI_KEY"),
+        ("producthunt", "PRODUCTHUNT_TOKEN"),
+        ("notebooklm", "GOOGLE_API_KEY"),
+    ]
+    for researcher, env_var in api_key_fields:
+        key_val = typer.prompt(f"  {env_var}", default="", show_default=False).strip()
+        if key_val:
+            # Validate
+            console.print(f"  [dim]{get_message('wizard.apikey_validating', eff_lang)}[/dim]", end=" ")
+            from khanote.validation.api_keys import validate_api_key
+            result = validate_api_key(researcher, key_val)
+            if result.valid is True:
+                console.print(f"[green]{get_message('wizard.apikey_valid', eff_lang)}[/green]")
+            elif result.valid is False:
+                console.print(f"[yellow]{get_message('wizard.apikey_invalid', eff_lang)}[/yellow]")
             else:
-                console.print("[dim]No starter feeds matched your profile — add feeds with khanote feed add[/dim]")
+                console.print(f"[dim]{get_message('wizard.apikey_skipped', eff_lang)}[/dim]")
+            api_keys[researcher] = key_val
+        else:
+            console.print(f"  [dim]{get_message('wizard.apikey_skipped', eff_lang)}[/dim]")
 
-    except (KeyboardInterrupt, Exception):
-        console.print("\n[dim]Preferences setup skipped. Edit preferences.yaml manually later.[/dim]")
+    # ── All inputs collected — now write files ─────────────────────────────────
+    ensure_output_path(resolved_output)
+    _write_config_files(
+        output_path=resolved_output,
+        tool=selected_tool,
+        language=selected_lang,
+        role=selected_role,
+        interests=selected_interests,
+        api_keys=api_keys,
+        existing_config=existing_config,
+    )
+
+    # ── Post-init panel ────────────────────────────────────────────────────────
+    from khanote.models.tool import TOOL_CONFIG
+    tool_cfg = TOOL_CONFIG.get(selected_tool)
+    restart_msg = get_message(tool_cfg.restart_instruction if tool_cfg else "restart.claude-code", eff_lang)
+
+    # Check if tool is installed
+    tool_warning = check_tool_installed(selected_tool, resolved_output)
+
+    panel_lines = [
+        f"[bold green]{get_message('init.success_title', eff_lang)}[/bold green]\n",
+        f"[bold]{get_message('init.next_steps_header', eff_lang)}[/bold]\n",
+        f"{get_message('init.step1_restart', eff_lang)}\n   {restart_msg}\n",
+        f"{get_message('init.step2_run_skill', eff_lang)}\n   [bold cyan]/khanote.start-my-day[/bold cyan]\n",
+        f"[dim]{get_message('init.tip_status', eff_lang)}[/dim]",
+    ]
+    if tool_warning:
+        panel_lines.insert(2, f"[yellow]{tool_warning}[/yellow]\n")
+
+    console.print(Panel("\n".join(panel_lines), title="khanote init"))
+
+    console.print(f"[green]✓[/green] Output: {resolved_output}")
+    console.print(f"[green]✓[/green] Tool: {selected_tool}")

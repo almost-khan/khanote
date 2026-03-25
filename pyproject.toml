@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "khanote"
 version = "0.1.0"
-description = "Universal research workflow kit connecting vibe coding tools with Obsidian"
+description = "Workflow kit for vibe coding tools — skills and SOPs for research, feeds, and daily briefings"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }

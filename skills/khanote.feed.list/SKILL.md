@@ -1,40 +1,21 @@
 # khanote.feed.list
 
-List all configured feeds with their status, researcher, and query.
+You are listing the user's configured research feeds.
 
-## When to use
+## Instructions
 
-Run this skill when the user wants to:
-- See all configured feeds
-- Check which feeds are active vs paused
-- Verify a feed was added correctly
-- Check for orphaned feeds
-
-## Behavior
-
-Run `khanote feed list` which displays a Rich table:
+1. Read `{vault_path}/.khanote/config.yaml` and find the `feeds` section.
+2. For each feed, collect: name, researcher, query, frequency, and active status.
+3. Check for orphaned feeds — feeds whose researcher no longer exists or is disabled in config.
+4. Display the feeds as a formatted table:
 
 ```
-┌──────────────┬────────────┬──────────────────┬───────────┬────────┬────────┐
-│ Feed         │ Researcher │ Query            │ Frequency │ Active │ Status │
-├──────────────┼────────────┼──────────────────┼───────────┼────────┼────────┤
-│ llm-papers   │ arxiv      │ large language…  │ daily     │ ✓      │        │
-│ ai-industry  │ perplexity │ AI startup fu…   │ daily     │ ✓      │        │
-│ agent-papers │ arxiv      │ AI agents        │ daily     │ ✗      │        │
-│ old-feed     │ deleted    │ old topic        │ daily     │ ✓      │ orphaned│
-└──────────────┴────────────┴──────────────────┴───────────┴────────┴────────┘
+| Feed         | Researcher | Query               | Frequency | Active | Notes   |
+|--------------|------------|---------------------|-----------|--------|---------|
+| ai-papers    | arxiv      | AI agents           | daily     | ✓      |         |
+| market-news  | newsapi    | startup funding     | daily     | ✓      |         |
+| old-feed     | deleted    | old topic           | daily     | ✓      | orphaned|
 ```
 
-- `✓` = active, `✗` = paused
-- `orphaned` = researcher no longer exists or is disabled
-
-## Implementation
-
-Uses `FeedManager.list_feeds()` and `FeedManager.detect_orphans()` from `src/khanote/feeds/manager.py`.
-
-## Related skills
-
-- `khanote.feed.add` — Add a new feed
-- `khanote.feed.pause` — Pause an active feed
-- `khanote.feed.resume` — Resume a paused feed
-- `khanote.feed.remove` — Remove a feed
+5. If there are no feeds, tell the user: "No feeds configured yet. Run `/khanote.feed.add` to add your first feed."
+6. If there are orphaned feeds, note: "Orphaned feeds reference researchers that no longer exist. Run `/khanote.feed.remove` to clean them up."

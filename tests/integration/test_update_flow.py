@@ -11,12 +11,13 @@ runner = CliRunner()
 
 
 @pytest.fixture
-def initialized_vault(tmp_path):
+def initialized_vault(tmp_path, monkeypatch):
     """Vault that has been through khanote init with claude-code."""
+    monkeypatch.chdir(tmp_path)
     result = runner.invoke(
         app,
-        ["init", "--vault", str(tmp_path), "--tool", "claude-code", "--researcher", "perplexity"],
-        input="y\n",
+        ["init", "--tool", "claude-code"],
+        input="\n\n\n\n\n\n\n",
     )
     assert result.exit_code == 0, result.output
     return tmp_path
@@ -28,8 +29,8 @@ class TestUpdateFlow:
         # Also init cursor
         runner.invoke(
             app,
-            ["init", "--vault", str(initialized_vault), "--tool", "cursor", "--researcher", "perplexity"],
-            input="y\n",
+            ["init", "--tool", "cursor"],
+            input="\n\n\n\n\n\n\n",
         )
         from khanote.cli.update import run_update
         run_update(vault_dir=initialized_vault)
