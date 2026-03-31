@@ -21,6 +21,7 @@ RESEARCHER_REGISTRY: dict[str, str] = {
     "newsapi": "khanote.researchers.newsapi:NewsAPIResearcher",
     "rss": "khanote.researchers.rss:RSSResearcher",
     "producthunt": "khanote.researchers.producthunt:ProductHuntResearcher",
+    "local": "khanote.researchers.local_file:LocalFileResearcher",
 }
 
 

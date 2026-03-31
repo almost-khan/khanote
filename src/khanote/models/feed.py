@@ -19,6 +19,7 @@ class Feed(BaseModel):
     researcher: str
     query: str
     keywords: list[str] = []
+    source: str | None = None  # directory or file path for local researcher
     max_age_days: int | None = None
     frequency: Literal["daily"] = "daily"
     active: bool = True
