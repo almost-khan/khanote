@@ -34,8 +34,8 @@ khanote 将一套**技能**（SOP 指令）安装到你的 vibe coding 工具中
 **第一步 — 安装**
 
 ```bash
-pip install khanote
-# 或：brew install khanote  |  pipx install khanote
+brew install almost-khan/tap/khanote
+# 或：pip install khanote  |  pipx install khanote
 ```
 
 **第二步 — 初始化（在你的 Obsidian vault 目录下）**
@@ -45,7 +45,7 @@ cd ~/your-obsidian-vault
 khanote init
 ```
 
-初始化向导会问 5 个问题：语言、工具、角色、兴趣方向、可选 API key。所有文件安装在当前目录。大约 2 分钟。
+交互式向导会展示渐变色 ASCII 艺术 Logo，然后用箭头键导航和圆点进度条（`● ● ○ ○ ○`）引导你完成 5 步设置。所有文件安装在当前目录。
 
 **第三步 — 重启工具，运行第一份简报**
 
@@ -64,26 +64,30 @@ khanote init
 ```markdown
 # 每日简报 — 2026-03-26
 
-## 头条
-[Gemini 2.0 Flash 在编程基准测试中超越 GPT-4o](https://...) — Google 最新模型
-在 HumanEval 上比上一代提升 23%。
+## Gemini 2.0 Flash 以编程基准 23% 领先提升企业采用门槛
+[Gemini 2.0 Flash](https://...) 在 HumanEval 上超越 GPT-4o。
+**这意味着**：评估编程助手的企业团队现在有了 OpenAI 旗舰产品的有力替代品。
+[[Google AI Blog]](https://...)
 
 ## 你的焦点
-1. [混合专家模型扩展规律更新](https://arxiv.org/...) — 新论文修订了 1000 亿+
-   参数模型的 MoE 效率估算。
-2. [Cursor 完成 9 亿美元 C 轮融资](https://...) — vibe coding 工具市值持续攀升。
+- **MoE 扩展规律在千亿参数以上被向下修正** — 新论文表明超过千亿参数后收益递减。
+  [[arXiv]](https://arxiv.org/...)
+- **Cursor 9 亿美元 C 轮标志 Vibe Coding 市场整合** — 开发者工具市场正收窄至
+  3-4 个主要玩家。[[TechCrunch]](https://...)
 
 ## 你的订阅
 ### ai-papers (arxiv)
-- [无注意力机制 Transformer 重访](https://arxiv.org/...) — RWKV-v6 基准测试
+- RWKV-v6 在不使用注意力机制的情况下匹配 Transformer 质量 [[arXiv]](https://...)
 
 ## 发现
-- [DeepMind AlphaFold 3 用于药物研发](https://...) — 与你的 AI 兴趣相关：
-  蛋白质结构预测正在推动制药管线革新。
+- **AlphaFold 3 蛋白质折叠突破与 LLM 注意力机制存在平行关系** — 结构生物学与
+  ML 架构的交叉融合正在加速。[[Nature]](https://...)
 
 ## 来源
 [所有引用链接]
 ```
+
+> 每个标题都是**行动标题**（陈述洞察而非描述话题）。每条内容回答"这意味着什么？"并附上来源引用。这是 khanote SOP 模板强制执行的[金字塔原则](https://en.wikipedia.org/wiki/Minto_Pyramid_Principle)写作质量。
 
 ---
 
@@ -114,15 +118,33 @@ khanote init
 
 ## 初始化向导（5 步）
 
-| 步骤 | 问题 | 默认值 | 说明 |
-|------|------|--------|------|
-| 1 | 语言 | English | en / zh / ja / ko / fr — 后续所有提示跟随语言切换 |
-| 2 | 工具 | claude-code | claude-code / cursor / codex / gemini-cli / opencode |
-| 3 | 角色 | mixed | developer / pm / researcher / operations / mixed |
-| 4 | 兴趣 | （跳过） | ai, product, market, tech, medical, finance, sports 等 |
-| 5 | API Keys | （跳过） | 4 个可选 key，逐个验证 ✓/✗ |
+运行 `khanote init` 时，首先展示渐变色 ASCII 艺术 Logo：
 
-每个问题都有默认值——你可以一路按 Enter 直接完成初始化。
+```
+  ██╗  ██╗██╗  ██╗ █████╗ ███╗   ██╗ ██████╗ ████████╗███████╗
+  ██║ ██╔╝██║  ██║██╔══██╗████╗  ██║██╔═══██╗╚══██╔══╝██╔════╝
+  █████╔╝ ███████║███████║██╔██╗ ██║██║   ██║   ██║   █████╗
+  ██╔═██╗ ██╔══██║██╔══██║██║╚██╗██║██║   ██║   ██║   ██╔══╝
+  ██║  ██╗██║  ██║██║  ██║██║ ╚████║╚██████╔╝   ██║   ███████╗
+  ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═════╝    ╚═╝   ╚══════╝
+```
+
+然后 5 步箭头键导航 + 圆点进度：
+
+| 步骤 | 问题 | 交互方式 | 默认值 |
+|------|------|---------|--------|
+| 1 | 语言 | 箭头键选择 | English |
+| 2 | 工具 | 箭头键选择 | Claude Code |
+| 3 | 角色 | 箭头键选择 | Mixed |
+| 4 | 兴趣 | 空格键复选框（多选）+ "Other (custom)" | （跳过） |
+| 5 | API Keys | 文本输入，Enter 跳过 | （跳过） |
+
+```
+● ● ● ○ ○  Step 3 of 5
+  What is your role?
+```
+
+每个问题都有默认值——你可以一路按 Enter 直接完成。非 TTY 环境（CI、管道输入）自动回退到文本输入。
 
 在同一目录再次运行 `khanote init` 会检测到已有配置，并预填当前值。
 
@@ -313,7 +335,7 @@ CLI 用于配置管理——研究流程在你的 vibe coding 工具中运行。
 
 ---
 
-## 内置研究者（9 个）
+## 内置研究者（10 个）
 
 | 研究者 | 最适合 | 是否需要密钥 |
 |--------|--------|-------------|
@@ -326,6 +348,17 @@ CLI 用于配置管理——研究流程在你的 vibe coding 工具中运行。
 | `rss` | 任何 RSS/Atom 订阅源 | 否 |
 | `producthunt` | 新产品和发布 | 是（`PRODUCTHUNT_TOKEN`） |
 | `notebooklm` | 文档合成 | 是（`GOOGLE_API_KEY`） |
+| `local` | 你自己的 vault 文件（.md、.txt、.pdf） | 否 |
+
+`local` 研究者从文件系统读取文件——将它指向一个 vault 目录，即可在每日简报中包含你自己的笔记。在 `config.yaml` 中绑定订阅：
+
+```yaml
+feeds:
+  my-notes:
+    researcher: local
+    query: "AI agents"
+    source: "./notes/research"
+```
 
 通过 `/khanote.researcher.add` 将任意 HTTP REST API 添加为自定义研究者——零代码，全程对话引导。
 
@@ -421,7 +454,7 @@ your-vault/
 
 ## 状态
 
-积极开发中。14 个技能、9 个内置研究者、订阅管理、每日简报、偏好系统和发现栏目均已实现。
+积极开发中。14 个技能、10 个内置研究者（含本地文件读取）、订阅管理、金字塔原则输出质量的每日简报、交互式初始化向导、偏好系统和发现栏目均已实现。
 
 ## 许可证
 

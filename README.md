@@ -34,8 +34,8 @@ khanote installs a set of **skills** (SOPs) into your vibe coding tool. When you
 **Step 1 — Install**
 
 ```bash
-pip install khanote
-# or: brew install khanote  |  pipx install khanote
+brew install almost-khan/tap/khanote
+# or: pip install khanote  |  pipx install khanote
 ```
 
 **Step 2 — Set up (from your Obsidian vault)**
@@ -45,7 +45,7 @@ cd ~/your-obsidian-vault
 khanote init
 ```
 
-The setup wizard asks 5 questions: language, tool, role, interests, and optional API keys. Everything installs in the current directory. Takes about 2 minutes.
+The interactive wizard shows a gradient ASCII art banner, then walks you through 5 steps with arrow-key navigation and dot progress indicators (`● ● ○ ○ ○`). Everything installs in the current directory.
 
 **Step 3 — Restart your tool and run your first briefing**
 
@@ -64,27 +64,32 @@ Your first daily briefing is saved as Markdown in your vault. Open it in Obsidia
 ```markdown
 # Daily Briefing — 2026-03-26
 
-## Top Story
-[Gemini 2.0 Flash outperforms GPT-4o on coding benchmarks](https://...) — Google's
-latest model shows 23% improvement on HumanEval vs prior generation.
+## Gemini 2.0 Flash Raises Enterprise Adoption Bar With Coding Benchmark Win
+[Gemini 2.0 Flash](https://...) outperforms GPT-4o by 23% on HumanEval.
+**What this means**: Enterprise teams evaluating coding assistants now have
+a credible alternative to OpenAI's flagship. [[Google AI Blog]](https://...)
 
 ## Your Focus
-1. [Mixture-of-Experts scaling laws updated](https://arxiv.org/...) — New paper
-   revises MoE efficiency estimates for 100B+ parameter models.
-2. [Cursor raises $900M Series C](https://...) — Vibe coding valuations continue
-   to surge as developer tools market consolidates.
+- **MoE Scaling Laws Revised Downward for 100B+ Models** — New paper revises
+  efficiency estimates, suggesting diminishing returns above 100B parameters.
+  [[arXiv]](https://arxiv.org/...)
+- **Cursor's $900M C Round Signals Vibe Coding Market Consolidation** — Developer
+  tools market is narrowing to 3-4 major players. [[TechCrunch]](https://...)
 
 ## Your Feeds
 ### ai-papers (arxiv)
-- [Attention-free transformers revisited](https://arxiv.org/...) — RWKV-v6 benchmarks
+- RWKV-v6 matches Transformer quality without attention overhead [[arXiv]](https://...)
 
 ## Discover
-- [DeepMind's AlphaFold 3 applied to drug discovery](https://...) — Adjacent to your
-  AI interest: protein structure prediction is now powering pharma pipelines.
+- **AlphaFold 3's Protein-Folding Breakthrough Parallels LLM Attention Mechanisms**
+  — Cross-pollination between structural biology and ML architectures accelerating.
+  [[Nature]](https://...)
 
 ## Sources
 [all cited URLs]
 ```
+
+> Every heading is an **action title** (states the insight, not the topic). Every item answers "so what?" with an implication. All claims cite sources inline. This is the [Pyramid Principle](https://en.wikipedia.org/wiki/Minto_Pyramid_Principle) writing quality enforced by khanote's SOP templates.
 
 ---
 
@@ -115,17 +120,33 @@ Your config lives in `.khanote/` inside the folder where you ran `khanote init`:
 
 ## Init Wizard (5 Steps)
 
-When you run `khanote init`, the wizard walks you through setup:
+When you run `khanote init`, you're greeted by a gradient ASCII art banner:
 
-| Step | Question | Default | Notes |
-|------|----------|---------|-------|
-| 1 | Language | English | en / zh / ja / ko / fr — all following prompts switch to your language |
-| 2 | Tool | claude-code | claude-code / cursor / codex / gemini-cli / opencode |
-| 3 | Role | mixed | developer / pm / researcher / operations / mixed |
-| 4 | Interests | (skip) | ai, product, market, tech, medical, finance, sports, climate, security, devops, web, saas |
-| 5 | API Keys | (skip) | PERPLEXITY_API_KEY, NEWSAPI_KEY, PRODUCTHUNT_TOKEN, GOOGLE_API_KEY — each validated inline |
+```
+  ██╗  ██╗██╗  ██╗ █████╗ ███╗   ██╗ ██████╗ ████████╗███████╗
+  ██║ ██╔╝██║  ██║██╔══██╗████╗  ██║██╔═══██╗╚══██╔══╝██╔════╝
+  █████╔╝ ███████║███████║██╔██╗ ██║██║   ██║   ██║   █████╗
+  ██╔═██╗ ██╔══██║██╔══██║██║╚██╗██║██║   ██║   ██║   ██╔══╝
+  ██║  ██╗██║  ██║██║  ██║██║ ╚████║╚██████╔╝   ██║   ███████╗
+  ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═════╝    ╚═╝   ╚══════╝
+```
 
-Every question has a default — you can press Enter through all 5 and get a working config.
+Then 5 steps with arrow-key navigation and dot progress:
+
+| Step | Question | Input | Default |
+|------|----------|-------|---------|
+| 1 | Language | Arrow-key select | English |
+| 2 | Tool | Arrow-key select | Claude Code |
+| 3 | Role | Arrow-key select | Mixed |
+| 4 | Interests | Spacebar checkbox (multi-select) + "Other (custom)" | (skip) |
+| 5 | API Keys | Text input, Enter to skip each | (skip) |
+
+```
+● ● ● ○ ○  Step 3 of 5
+  What is your role?
+```
+
+Every question has a default — you can press Enter through all 5 and get a working config. Non-TTY environments (CI, piped input) fall back to text prompts automatically.
 
 Re-running `khanote init` in the same directory detects your existing config and pre-fills current values.
 
@@ -316,7 +337,7 @@ Run these inside your vibe coding tool (Claude Code, Cursor, etc.):
 
 ---
 
-## Built-in Researchers (9)
+## Built-in Researchers (10)
 
 | Researcher | Best for | Key required? |
 |-----------|----------|--------------|
@@ -329,6 +350,17 @@ Run these inside your vibe coding tool (Claude Code, Cursor, etc.):
 | `rss` | Any RSS/Atom feed by URL | No |
 | `producthunt` | New products and launches | Yes (`PRODUCTHUNT_TOKEN`) |
 | `notebooklm` | Document synthesis | Yes (`GOOGLE_API_KEY`) |
+| `local` | Your own vault files (.md, .txt, .pdf) | No |
+
+`local` researcher reads files from your filesystem — point it at a vault directory to include your own notes in daily briefings. Bind it to a feed in `config.yaml`:
+
+```yaml
+feeds:
+  my-notes:
+    researcher: local
+    query: "AI agents"
+    source: "./notes/research"
+```
 
 Add any HTTP REST API as a custom researcher via `/khanote.researcher.add` — no code, guided prompts only.
 
@@ -424,7 +456,7 @@ your-vault/
 
 ## Status
 
-Active development. 14 skills, 9 built-in researchers, feed management, daily briefing, preference system, and serendipity Discover are all implemented.
+Active development. 14 skills, 10 built-in researchers (including local file reader), feed management, daily briefing with Pyramid Principle output quality, interactive onboarding wizard, preference system, and serendipity Discover are all implemented.
 
 ## License
 
