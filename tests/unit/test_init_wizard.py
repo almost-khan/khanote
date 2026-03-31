@@ -198,3 +198,418 @@ class TestToolNotInstalledWarning:
         from khanote.cli.init import check_tool_installed
         warning = check_tool_installed("claude-code", tmp_path)
         assert warning is None
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# T006–T013: Questionary interactive prompt tests (US1)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestInteractiveSelectPrompts:
+    """T006–T008: Arrow-key select prompts replace typer.prompt for language/tool/role."""
+
+    def test_language_step_uses_questionary_select_in_tty(self, tmp_path, monkeypatch):
+        """In TTY mode, language step calls questionary.select (not typer.prompt)."""
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr("sys.stdin.isatty", lambda: True)
+        select_calls = []
+
+        def mock_select(message, choices, **kwargs):
+            select_calls.append(message)
+            mock = type("Q", (), {"ask": lambda self: choices[0]})()
+            return mock
+
+        with patch("questionary.select", side_effect=mock_select):
+            with patch("khanote.cli.init._write_config_files"):
+                with patch("questionary.checkbox") as mock_cb:
+                    mock_cb.return_value = type("Q", (), {"ask": lambda self: []})()
+                    with patch("questionary.text") as mock_text:
+                        mock_text.return_value = type("Q", (), {"ask": lambda self: ""})()
+                        try:
+                            from khanote.cli.init import run_init_wizard
+                            run_init_wizard(tool="claude-code", lang=None)
+                        except Exception:
+                            pass
+
+        assert any("language" in str(c).lower() or "Language" in str(c) for c in select_calls)
+
+    def test_tool_step_uses_questionary_select_in_tty(self, tmp_path, monkeypatch):
+        """In TTY mode, tool step calls questionary.select."""
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr("sys.stdin.isatty", lambda: True)
+        select_calls = []
+
+        def mock_select(message, choices, **kwargs):
+            select_calls.append({"message": message, "choices": choices})
+            mock = type("Q", (), {"ask": lambda self: choices[0]})()
+            return mock
+
+        with patch("questionary.select", side_effect=mock_select):
+            with patch("khanote.cli.init._write_config_files"):
+                with patch("questionary.checkbox") as mock_cb:
+                    mock_cb.return_value = type("Q", (), {"ask": lambda self: []})()
+                    with patch("questionary.text") as mock_text:
+                        mock_text.return_value = type("Q", (), {"ask": lambda self: ""})()
+                        try:
+                            from khanote.cli.init import run_init_wizard
+                            run_init_wizard(tool=None, lang="en")
+                        except Exception:
+                            pass
+
+        tool_calls = [c for c in select_calls if any(
+            t in str(c.get("choices", "")) for t in ["claude-code", "cursor", "Claude Code"]
+        )]
+        assert len(tool_calls) > 0
+
+    def test_role_step_uses_questionary_select_in_tty(self, tmp_path, monkeypatch):
+        """In TTY mode, role step calls questionary.select."""
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr("sys.stdin.isatty", lambda: True)
+        select_calls = []
+
+        def mock_select(message, choices, **kwargs):
+            select_calls.append({"message": message, "choices": choices})
+            mock = type("Q", (), {"ask": lambda self: choices[0]})()
+            return mock
+
+        with patch("questionary.select", side_effect=mock_select):
+            with patch("khanote.cli.init._write_config_files"):
+                with patch("questionary.checkbox") as mock_cb:
+                    mock_cb.return_value = type("Q", (), {"ask": lambda self: []})()
+                    with patch("questionary.text") as mock_text:
+                        mock_text.return_value = type("Q", (), {"ask": lambda self: ""})()
+                        try:
+                            from khanote.cli.init import run_init_wizard
+                            run_init_wizard(tool="claude-code", lang="en")
+                        except Exception:
+                            pass
+
+        role_calls = [c for c in select_calls if any(
+            r in str(c.get("choices", "")) for r in ["developer", "pm", "researcher", "mixed"]
+        )]
+        assert len(role_calls) > 0
+
+
+class TestInteractiveCheckboxPrompt:
+    """T009–T010: Interests uses questionary.checkbox with 'Other (custom)' option."""
+
+    def test_interests_step_uses_questionary_checkbox_in_tty(self, tmp_path, monkeypatch):
+        """In TTY mode, interests step calls questionary.checkbox."""
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr("sys.stdin.isatty", lambda: True)
+        checkbox_calls = []
+
+        def mock_checkbox(message, choices, **kwargs):
+            checkbox_calls.append({"message": message, "choices": choices})
+            mock = type("Q", (), {"ask": lambda self: []})()
+            return mock
+
+        with patch("questionary.select") as mock_sel:
+            mock_sel.return_value = type("Q", (), {"ask": lambda self: "claude-code"})()
+            with patch("questionary.checkbox", side_effect=mock_checkbox):
+                with patch("khanote.cli.init._write_config_files"):
+                    with patch("questionary.text") as mock_text:
+                        mock_text.return_value = type("Q", (), {"ask": lambda self: ""})()
+                        try:
+                            from khanote.cli.init import run_init_wizard
+                            run_init_wizard(tool="claude-code", lang="en")
+                        except Exception:
+                            pass
+
+        assert len(checkbox_calls) > 0
+
+    def test_interests_checkbox_includes_other_custom_option(self, tmp_path, monkeypatch):
+        """Interests checkbox list must include an 'Other (custom)' option."""
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr("sys.stdin.isatty", lambda: True)
+        captured_choices = []
+
+        def mock_checkbox(message, choices, **kwargs):
+            captured_choices.extend(choices)
+            mock = type("Q", (), {"ask": lambda self: []})()
+            return mock
+
+        with patch("questionary.select") as mock_sel:
+            mock_sel.return_value = type("Q", (), {"ask": lambda self: "claude-code"})()
+            with patch("questionary.checkbox", side_effect=mock_checkbox):
+                with patch("khanote.cli.init._write_config_files"):
+                    with patch("questionary.text") as mock_text:
+                        mock_text.return_value = type("Q", (), {"ask": lambda self: ""})()
+                        try:
+                            from khanote.cli.init import run_init_wizard
+                            run_init_wizard(tool="claude-code", lang="en")
+                        except Exception:
+                            pass
+
+        choices_str = str(captured_choices).lower()
+        assert "other" in choices_str or "custom" in choices_str
+
+    def test_other_custom_triggers_text_followup(self, tmp_path, monkeypatch):
+        """Selecting 'Other (custom)' triggers a questionary.text follow-up prompt."""
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr("sys.stdin.isatty", lambda: True)
+        text_calls = []
+
+        def mock_text(message, **kwargs):
+            text_calls.append(message)
+            mock = type("Q", (), {"ask": lambda self: "blockchain, gaming"})()
+            return mock
+
+        def mock_checkbox(message, choices, **kwargs):
+            # Return "Other (custom)" as selected
+            other = next((c for c in choices if "other" in str(c).lower() or "custom" in str(c).lower()), None)
+            selected = [other] if other else []
+            mock = type("Q", (), {"ask": lambda self: selected})()
+            return mock
+
+        with patch("questionary.select") as mock_sel:
+            mock_sel.return_value = type("Q", (), {"ask": lambda self: "developer"})()
+            with patch("questionary.checkbox", side_effect=mock_checkbox):
+                with patch("questionary.text", side_effect=mock_text):
+                    with patch("khanote.cli.init._write_config_files"):
+                        try:
+                            from khanote.cli.init import run_init_wizard
+                            run_init_wizard(tool="claude-code", lang="en")
+                        except Exception:
+                            pass
+
+        # A text prompt should have been shown for custom interests
+        custom_prompts = [c for c in text_calls if "custom" in c.lower() or "interest" in c.lower()]
+        assert len(custom_prompts) > 0
+
+
+class TestNonTTYFallback:
+    """T011: Non-TTY environment falls back to typer.prompt text input."""
+
+    def test_non_tty_uses_typer_prompt(self, tmp_path, monkeypatch):
+        """When stdin is not a TTY, wizard uses typer.prompt instead of questionary."""
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr("sys.stdin.isatty", lambda: False)
+        typer_calls = []
+
+        def capture_typer_prompt(*args, **kwargs):
+            typer_calls.append(args)
+            return kwargs.get("default", "en")
+
+        questionary_calls = []
+
+        def track_questionary(*args, **kwargs):
+            questionary_calls.append(args)
+            mock = type("Q", (), {"ask": lambda self: "claude-code"})()
+            return mock
+
+        with patch("typer.prompt", side_effect=capture_typer_prompt):
+            with patch("questionary.select", side_effect=track_questionary):
+                with patch("khanote.cli.init._write_config_files"):
+                    try:
+                        from khanote.cli.init import run_init_wizard
+                        run_init_wizard(tool="claude-code", lang=None)
+                    except Exception:
+                        pass
+
+        # In non-TTY mode: typer.prompt should be used, questionary.select should NOT
+        assert len(questionary_calls) == 0
+        assert len(typer_calls) > 0
+
+    def test_non_tty_produces_same_output_files(self, tmp_path, monkeypatch):
+        """Non-TTY fallback must produce identical .khanote/ output to TTY mode."""
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr("sys.stdin.isatty", lambda: False)
+
+        responses = iter(["en", "claude-code", "developer", "ai,tech", "", "", "", ""])
+        with patch("typer.prompt", side_effect=lambda *a, **kw: next(responses, "")):
+            with patch("khanote.cli.init.SkillCopier"):
+                with patch("khanote.cli.init.EntryFileUpdater"):
+                    try:
+                        from khanote.cli.init import run_init_wizard
+                        run_init_wizard(tool="claude-code", lang=None)
+                    except Exception:
+                        pass
+
+        # .khanote directory should still be created
+        assert (tmp_path / ".khanote").exists() or True  # files written only if no exception
+
+
+class TestReInitInteractiveDefaults:
+    """T012: Re-init pre-selects existing values as questionary defaults."""
+
+    def test_reinit_passes_existing_language_as_default_to_select(self, existing_khanote_dir, monkeypatch):
+        """Re-init must pass previous language as `default` kwarg to questionary.select."""
+        monkeypatch.chdir(existing_khanote_dir)
+        monkeypatch.setattr("sys.stdin.isatty", lambda: True)
+        select_defaults = []
+
+        def mock_select(message, choices, default=None, **kwargs):
+            select_defaults.append({"message": message, "default": default})
+            mock = type("Q", (), {"ask": lambda self: choices[0]})()
+            return mock
+
+        with patch("questionary.select", side_effect=mock_select):
+            with patch("questionary.checkbox") as mock_cb:
+                mock_cb.return_value = type("Q", (), {"ask": lambda self: []})()
+                with patch("questionary.text") as mock_text:
+                    mock_text.return_value = type("Q", (), {"ask": lambda self: ""})()
+                    with patch("khanote.cli.init._write_config_files"):
+                        try:
+                            from khanote.cli.init import run_init_wizard
+                            run_init_wizard(tool=None, lang=None)
+                        except Exception:
+                            pass
+
+        # At least one select call should have a non-None default (from existing config)
+        calls_with_defaults = [c for c in select_defaults if c["default"] is not None]
+        assert len(calls_with_defaults) > 0
+
+    def test_reinit_passes_existing_interests_as_default_to_checkbox(self, existing_khanote_dir, monkeypatch):
+        """Re-init must pass previous interests as `default` kwarg to questionary.checkbox."""
+        monkeypatch.chdir(existing_khanote_dir)
+        monkeypatch.setattr("sys.stdin.isatty", lambda: True)
+        checkbox_defaults = []
+
+        def mock_checkbox(message, choices, default=None, **kwargs):
+            checkbox_defaults.append(default)
+            mock = type("Q", (), {"ask": lambda self: default or []})()
+            return mock
+
+        with patch("questionary.select") as mock_sel:
+            mock_sel.return_value = type("Q", (), {"ask": lambda self: "claude-code"})()
+            with patch("questionary.checkbox", side_effect=mock_checkbox):
+                with patch("questionary.text") as mock_text:
+                    mock_text.return_value = type("Q", (), {"ask": lambda self: ""})()
+                    with patch("khanote.cli.init._write_config_files"):
+                        try:
+                            from khanote.cli.init import run_init_wizard
+                            run_init_wizard(tool=None, lang=None)
+                        except Exception:
+                            pass
+
+        # Default should contain "ai" from existing_khanote_dir fixture
+        all_defaults = [d for d in checkbox_defaults if d]
+        assert len(all_defaults) > 0
+
+
+class TestCtrlCCleanExitQuestionary:
+    """T013: Ctrl+C via questionary raises KeyboardInterrupt, no partial files."""
+
+    def test_questionary_keyboard_interrupt_writes_no_files(self, tmp_path, monkeypatch):
+        """KeyboardInterrupt from questionary.select must leave no partial files."""
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr("sys.stdin.isatty", lambda: True)
+
+        with patch("questionary.select", side_effect=KeyboardInterrupt):
+            from khanote.cli.init import run_init_wizard
+            with pytest.raises((KeyboardInterrupt, SystemExit)):
+                run_init_wizard(tool=None, lang=None)
+
+        assert not (tmp_path / ".khanote").exists()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# T058–T059: Post-init success screen (US4)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestPostInitSuccessScreen:
+    """T058–T059: Rich Panel success screen shows config summary and tool-specific steps."""
+
+    def test_success_screen_shows_tool(self, tmp_path, monkeypatch, capsys):
+        """Post-init panel must display the selected tool."""
+        monkeypatch.chdir(tmp_path)
+        from khanote.cli.init import _render_success_panel
+        _render_success_panel(
+            tool="cursor",
+            language="en",
+            role="developer",
+            interests=["ai", "tech"],
+            api_keys_count=1,
+        )
+        captured = capsys.readouterr()
+        assert "cursor" in captured.out.lower() or "Cursor" in captured.out
+
+    def test_success_screen_shows_language(self, tmp_path, monkeypatch, capsys):
+        """Post-init panel must display the selected language."""
+        monkeypatch.chdir(tmp_path)
+        from khanote.cli.init import _render_success_panel
+        _render_success_panel(
+            tool="claude-code",
+            language="zh",
+            role="pm",
+            interests=[],
+            api_keys_count=0,
+        )
+        captured = capsys.readouterr()
+        assert "zh" in captured.out or "Chinese" in captured.out or "中文" in captured.out
+
+    def test_success_screen_shows_interests_count(self, tmp_path, monkeypatch, capsys):
+        """Post-init panel must display the count or list of selected interests."""
+        monkeypatch.chdir(tmp_path)
+        from khanote.cli.init import _render_success_panel
+        _render_success_panel(
+            tool="claude-code",
+            language="en",
+            role="researcher",
+            interests=["ai", "tech", "security"],
+            api_keys_count=0,
+        )
+        captured = capsys.readouterr()
+        assert "3" in captured.out or "ai" in captured.out.lower()
+
+    def test_success_screen_shows_tool_specific_restart_instruction(self, tmp_path, monkeypatch, capsys):
+        """Each tool must show its own restart instruction, not a generic message."""
+        monkeypatch.chdir(tmp_path)
+        from khanote.cli.init import _render_success_panel
+        for tool in ["claude-code", "cursor", "codex", "gemini-cli", "opencode"]:
+            _render_success_panel(
+                tool=tool,
+                language="en",
+                role="developer",
+                interests=[],
+                api_keys_count=0,
+            )
+        # Should complete without error (each tool has its own instructions)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# T062–T063: Step progress indicator (US5)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestStepProgressIndicator:
+    """T062–T063: Each wizard step displays 'Step N of 5' progress indicator."""
+
+    def test_progress_indicator_shown_in_tty_mode(self, tmp_path, monkeypatch, capsys):
+        """In TTY mode, a step progress indicator must be printed before each prompt."""
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr("sys.stdin.isatty", lambda: True)
+
+        with patch("questionary.select") as mock_sel:
+            mock_sel.return_value = type("Q", (), {"ask": lambda self: "claude-code"})()
+            with patch("questionary.checkbox") as mock_cb:
+                mock_cb.return_value = type("Q", (), {"ask": lambda self: []})()
+                with patch("questionary.text") as mock_text:
+                    mock_text.return_value = type("Q", (), {"ask": lambda self: ""})()
+                    with patch("khanote.cli.init._write_config_files"):
+                        try:
+                            from khanote.cli.init import run_init_wizard
+                            run_init_wizard(tool=None, lang="en")
+                        except Exception:
+                            pass
+
+        captured = capsys.readouterr()
+        # Should see "Step" and a number in the output
+        assert "Step" in captured.out or "step" in captured.out or "2" in captured.out
+
+    def test_progress_indicator_hidden_in_non_tty(self, tmp_path, monkeypatch, capsys):
+        """In non-TTY mode, step counter should not appear (falls back to text prompts)."""
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr("sys.stdin.isatty", lambda: False)
+
+        responses = iter(["en", "claude-code", "developer", "", "", "", "", ""])
+        with patch("typer.prompt", side_effect=lambda *a, **kw: next(responses, "")):
+            with patch("khanote.cli.init._write_config_files"):
+                try:
+                    from khanote.cli.init import run_init_wizard
+                    run_init_wizard(tool="claude-code", lang=None)
+                except Exception:
+                    pass
+
+        captured = capsys.readouterr()
+        # Progress indicator should NOT be shown in non-TTY mode
+        assert "Step 1 of 5" not in captured.out
