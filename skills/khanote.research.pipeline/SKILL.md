@@ -11,6 +11,10 @@ You are running a full research pipeline: start → ingest → analyze → save.
 5. Run `/khanote.research.analyze` to extract findings and write structured notes.
 6. Run `/khanote.research.save` to synthesize and finalize the session.
 7. Show the user the executive summary from the synthesis and the path to the full report.
+   - The executive summary must follow the Pyramid Principle: conclusion first, supporting evidence second.
+   - Every finding heading must be an action title (insight stated as a verb-driven sentence).
+   - Every finding must answer "so what?" with an actionable implication.
+   - All factual claims must cite sources inline.
 
 ## Notes
 

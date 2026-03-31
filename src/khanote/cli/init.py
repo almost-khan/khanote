@@ -1,6 +1,7 @@
 """Init command: language-first interactive wizard for khanote setup."""
 from __future__ import annotations
 
+import sys
 import shutil
 from pathlib import Path
 from typing import Optional
@@ -8,13 +9,30 @@ from typing import Optional
 import yaml
 import typer
 from rich.console import Console
-from rich.panel import Panel
+from rich.table import Table
+from rich.text import Text
 
 from khanote.distribution.copier import SkillCopier
 from khanote.distribution.entry_file import EntryFileUpdater
 from khanote.i18n import get_message
 
 console = Console()
+
+# ── Brand colors ──────────────────────────────────────────────────────────────
+_GRADIENT = ["#00e5ff", "#00d4f5", "#00c4eb", "#00b3e0", "#00a3d6", "#0093cc"]
+_ACCENT = "#00bcd4"  # Primary cyan
+_SUCCESS = "#4caf50"
+_DIM = "dim"
+
+# ── ASCII Art Logo (ANSI Shadow style) ────────────────────────────────────────
+_LOGO_LINES = [
+    r"  ██╗  ██╗██╗  ██╗ █████╗ ███╗   ██╗ ██████╗ ████████╗███████╗",
+    r"  ██║ ██╔╝██║  ██║██╔══██╗████╗  ██║██╔═══██╗╚══██╔══╝██╔════╝",
+    r"  █████╔╝ ███████║███████║██╔██╗ ██║██║   ██║   ██║   █████╗  ",
+    r"  ██╔═██╗ ██╔══██║██╔══██║██║╚██╗██║██║   ██║   ██║   ██╔══╝  ",
+    r"  ██║  ██╗██║  ██║██║  ██║██║ ╚████║╚██████╔╝   ██║   ███████╗",
+    r"  ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═════╝    ╚═╝   ╚══════╝",
+]
 
 # Path to bundled skills (relative to this file: src/khanote/cli/ → skills/)
 _PACKAGE_DIR = Path(__file__).parent.parent
@@ -34,6 +52,64 @@ _LANG_TO_BCP47 = {
     "en": "en-US", "zh": "zh-CN", "ja": "ja-JP", "ko": "ko-KR", "fr": "fr-FR",
     "1": "en-US", "2": "zh-CN", "3": "ja-JP", "4": "ko-KR", "5": "fr-FR",
 }
+
+_LANG_DISPLAY = {
+    "en": "English",
+    "zh": "中文 (Chinese)",
+    "ja": "日本語 (Japanese)",
+    "ko": "한국어 (Korean)",
+    "fr": "Français (French)",
+}
+
+_TOOL_DISPLAY = {
+    "claude-code": "Claude Code",
+    "cursor": "Cursor",
+    "codex": "OpenAI Codex CLI",
+    "gemini-cli": "Gemini CLI",
+    "opencode": "OpenCode",
+}
+
+_ROLE_DISPLAY = {
+    "developer": "Developer",
+    "pm": "Product Manager",
+    "researcher": "Researcher",
+    "operations": "Operations",
+    "mixed": "Mixed / Other",
+}
+
+_OTHER_CUSTOM_LABEL = "Other (custom)"
+
+_TOTAL_STEPS = 5
+
+
+def _print_banner() -> None:
+    """Print the gradient ASCII art banner with tagline."""
+    console.print()
+    for i, line in enumerate(_LOGO_LINES):
+        color = _GRADIENT[i % len(_GRADIENT)]
+        console.print(f"[{color}]{line}[/{color}]")
+    console.print()
+    tagline = Text("  Your AI research workflow companion", style="italic dim")
+    from khanote import __version__
+    tagline.append(f"  v{__version__}", style=f"bold {_ACCENT}")
+    console.print(tagline)
+    console.print()
+
+
+def _fmt_choice(code: str, display: str) -> str:
+    """Format a questionary choice as 'Display (code)' for test inspectability."""
+    return f"{display} ({code})"
+
+
+def _parse_code(chosen: str, mapping: dict[str, str]) -> str:
+    """Extract code from 'Display (code)' string, falling back to mapping lookup."""
+    import re as _re
+    m = _re.search(r"\(([^)]+)\)$", chosen)
+    return m.group(1) if m else mapping.get(chosen, chosen)
+
+
+def _is_tty() -> bool:
+    return sys.stdin.isatty()
 
 
 class WizardState:
@@ -109,6 +185,94 @@ def load_existing_defaults(base_dir: Path) -> dict:
             pass
 
     return defaults
+
+
+def _render_success_panel(
+    tool: str,
+    language: str,
+    role: str,
+    interests: list[str],
+    api_keys_count: int,
+) -> None:
+    """Render the post-init Rich Panel with configuration summary."""
+    from rich.box import HEAVY
+    from khanote.models.tool import TOOL_CONFIG
+
+    eff_lang = language if language in _SUPPORTED_LANGUAGES else "en"
+    tool_cfg = TOOL_CONFIG.get(tool)
+    restart_msg = get_message(
+        tool_cfg.restart_instruction if tool_cfg else "restart.claude-code", eff_lang
+    )
+
+    lang_display = _LANG_DISPLAY.get(language, language)
+    tool_display = _TOOL_DISPLAY.get(tool, tool)
+    interests_display = ", ".join(interests) if interests else "(none)"
+    api_display = str(api_keys_count) if api_keys_count else "0"
+
+    # ── Checkmark header ──
+    console.print()
+    header = Text()
+    header.append("  ✔ ", style=f"bold {_SUCCESS}")
+    header.append(get_message("init.success_title", eff_lang), style=f"bold {_SUCCESS}")
+    console.print(header)
+    console.print()
+
+    # ── Config summary table ──
+    table = Table(
+        show_header=False,
+        box=HEAVY,
+        border_style=_ACCENT,
+        padding=(0, 2),
+        title=f"[bold {_ACCENT}]Configuration[/bold {_ACCENT}]",
+        title_style=f"bold {_ACCENT}",
+    )
+    table.add_column(style="dim", min_width=12)
+    table.add_column()
+
+    table.add_row("Language", f"[bold]{lang_display}[/bold]  [dim]({language})[/dim]")
+    table.add_row("Tool", f"[bold {_ACCENT}]{tool_display}[/bold {_ACCENT}]")
+    table.add_row("Role", f"[bold]{role.title()}[/bold]")
+    table.add_row("Interests", f"[bold]{interests_display}[/bold]")
+    table.add_row("API Keys", f"[bold]{api_display}[/bold] configured")
+
+    console.print(table)
+
+    # ── Next steps ──
+    console.print()
+    console.print(f"  [bold]{get_message('init.next_steps_header', eff_lang)}[/bold]")
+    console.print()
+    step1_msg = get_message('init.step1_restart', eff_lang)
+    # Strip leading "1. " or "1." if the i18n message already includes numbering
+    for prefix in ("1. ", "1.", "2. ", "2."):
+        step1_msg = step1_msg.removeprefix(prefix).lstrip()
+    step2_msg = get_message('init.step2_run_skill', eff_lang)
+    for prefix in ("1. ", "1.", "2. ", "2."):
+        step2_msg = step2_msg.removeprefix(prefix).lstrip()
+
+    console.print(f"  [{_ACCENT}]1.[/{_ACCENT}] {step1_msg}")
+    console.print(f"     [bold {_ACCENT}]$ {restart_msg}[/bold {_ACCENT}]")
+    console.print()
+    console.print(f"  [{_ACCENT}]2.[/{_ACCENT}] {step2_msg}")
+    console.print(f"     [bold {_ACCENT}]/khanote.start-my-day[/bold {_ACCENT}]")
+    console.print()
+    console.print(f"  [dim]{get_message('init.tip_status', eff_lang)}[/dim]")
+    console.print()
+
+
+def _print_step(step_num: int, label: str) -> None:
+    """Print step header with dot progress indicator."""
+    dots = Text()
+    for i in range(1, _TOTAL_STEPS + 1):
+        if i < step_num:
+            dots.append("● ", style=_SUCCESS)
+        elif i == step_num:
+            dots.append("● ", style=f"bold {_ACCENT}")
+        else:
+            dots.append("○ ", style="dim")
+    step_text = Text(f" Step {step_num} of {_TOTAL_STEPS}", style="dim")
+    console.print()
+    console.print(dots, step_text)
+    console.print(f"  [bold]{label}[/bold]")
 
 
 def _write_config_files(
@@ -201,7 +365,15 @@ def run_init_wizard(
 
     Installs in the current working directory (like speckit).
     Collects all inputs before writing any files (Ctrl+C atomicity).
+    Uses questionary (arrow-key navigation) in TTY mode; falls back to
+    typer.prompt in non-TTY / piped environments.
     """
+    use_interactive = _is_tty()
+
+    # Show branded banner in TTY mode
+    if use_interactive:
+        _print_banner()
+
     # Output is always the current working directory
     resolved_output = Path.cwd().resolve()
 
@@ -222,9 +394,30 @@ def run_init_wizard(
     else:
         defaults = dict(WizardState.defaults)
 
-    # ── Step 1: Language (always shown; shown in ALL languages simultaneously) ──
+    # Parse existing interests for questionary default pre-selection
+    existing_interests: list[str] = []
+    if defaults.get("interests"):
+        existing_interests = [i.strip() for i in defaults["interests"].split(",") if i.strip()]
+
+    # ── Step 1: Language ───────────────────────────────────────────────────────
     if lang:
         selected_lang = lang.split("-")[0].split("_")[0].lower()
+    elif use_interactive:
+        import questionary
+
+        _print_step(1, "Language / 语言 / 言語")
+
+        lang_choices = [_fmt_choice(k, v) for k, v in _LANG_DISPLAY.items()]
+        default_lang_str = _fmt_choice(
+            defaults.get("language", "en"),
+            _LANG_DISPLAY.get(defaults.get("language", "en"), "English"),
+        )
+        result = questionary.select(
+            "Choose your language:",
+            choices=lang_choices,
+            default=default_lang_str,
+        ).ask()
+        selected_lang = _parse_code(result, {v: k for k, v in _LANG_DISPLAY.items()}) if result else defaults.get("language", "en")
     else:
         console.print(
             "\n[bold]khanote setup[/bold]\n"
@@ -237,7 +430,6 @@ def run_init_wizard(
             get_message("wizard.language_prompt", "en"),
             default=defaults.get("language", "en"),
         ).strip().lower()
-        # Map numeric choices to codes
         code_map = {"1": "en", "2": "zh", "3": "ja", "4": "ko", "5": "fr"}
         selected_lang = code_map.get(lang_input, lang_input.split("-")[0].split("_")[0])
 
@@ -251,6 +443,22 @@ def run_init_wizard(
     # ── Step 2: Tool ───────────────────────────────────────────────────────────
     if tool:
         selected_tool = tool
+    elif use_interactive:
+        import questionary
+
+        _print_step(2, get_message("wizard.tool_prompt", eff_lang))
+
+        tool_choices = [_fmt_choice(k, v) for k, v in _TOOL_DISPLAY.items()]
+        default_tool_str = _fmt_choice(
+            defaults.get("tool", "claude-code"),
+            _TOOL_DISPLAY.get(defaults.get("tool", "claude-code"), "Claude Code"),
+        )
+        result = questionary.select(
+            get_message("wizard.tool_prompt", eff_lang),
+            choices=tool_choices,
+            default=default_tool_str,
+        ).ask()
+        selected_tool = _parse_code(result, {v: k for k, v in _TOOL_DISPLAY.items()}) if result else "claude-code"
     else:
         console.print(f"\n{get_message('wizard.tool_choices', eff_lang)}")
         tool_input = typer.prompt(
@@ -263,23 +471,71 @@ def run_init_wizard(
             selected_tool = "claude-code"
 
     # ── Step 3: Role ───────────────────────────────────────────────────────────
-    console.print(f"\n{get_message('wizard.role_choices', eff_lang)}")
-    role_input = typer.prompt(
-        get_message("wizard.role_prompt", eff_lang),
-        default=defaults.get("role", "mixed"),
-    ).strip().lower()
-    role_map = {"1": "developer", "2": "pm", "3": "researcher", "4": "operations", "5": "mixed"}
-    selected_role = role_map.get(role_input, role_input)
-    if selected_role not in _ROLE_NAMES:
-        selected_role = "mixed"
+    if use_interactive:
+        import questionary
+
+        _print_step(3, get_message("wizard.role_prompt", eff_lang))
+
+        role_choices = [_fmt_choice(k, v) for k, v in _ROLE_DISPLAY.items()]
+        default_role_str = _fmt_choice(
+            defaults.get("role", "mixed"),
+            _ROLE_DISPLAY.get(defaults.get("role", "mixed"), "Mixed / Other"),
+        )
+        result = questionary.select(
+            get_message("wizard.role_prompt", eff_lang),
+            choices=role_choices,
+            default=default_role_str,
+        ).ask()
+        selected_role = _parse_code(result, {v: k for k, v in _ROLE_DISPLAY.items()}) if result else "mixed"
+    else:
+        console.print(f"\n{get_message('wizard.role_choices', eff_lang)}")
+        role_input = typer.prompt(
+            get_message("wizard.role_prompt", eff_lang),
+            default=defaults.get("role", "mixed"),
+        ).strip().lower()
+        role_map = {"1": "developer", "2": "pm", "3": "researcher", "4": "operations", "5": "mixed"}
+        selected_role = role_map.get(role_input, role_input)
+        if selected_role not in _ROLE_NAMES:
+            selected_role = "mixed"
 
     # ── Step 4: Interests ──────────────────────────────────────────────────────
-    console.print(f"\n[dim]{get_message('wizard.interests_hint', eff_lang)}[/dim]")
-    interests_str = typer.prompt(
-        get_message("wizard.interests_prompt", eff_lang),
-        default=defaults.get("interests", ""),
-    ).strip()
-    selected_interests = [i.strip().lower() for i in interests_str.split(",") if i.strip()] if interests_str else []
+    if use_interactive:
+        import questionary
+
+        _print_step(4, get_message("wizard.interests_prompt", eff_lang))
+
+        interest_choices = _INTEREST_OPTIONS + [_OTHER_CUSTOM_LABEL]
+        default_interests = [i for i in existing_interests if i in _INTEREST_OPTIONS]
+
+        selected_raw: list = questionary.checkbox(
+            get_message("wizard.interests_prompt", eff_lang),
+            choices=interest_choices,
+            default=default_interests or None,
+        ).ask() or []
+
+        selected_interests: list[str] = []
+        has_custom = any(
+            "other" in str(s).lower() or "custom" in str(s).lower()
+            for s in selected_raw
+        )
+
+        for item in selected_raw:
+            if "other" not in str(item).lower() and "custom" not in str(item).lower():
+                selected_interests.append(str(item))
+
+        if has_custom:
+            custom_raw = questionary.text(
+                "Enter custom interests (comma-separated):",
+            ).ask() or ""
+            custom_list = [i.strip().lower() for i in custom_raw.split(",") if i.strip()]
+            selected_interests.extend(custom_list)
+    else:
+        console.print(f"\n[dim]{get_message('wizard.interests_hint', eff_lang)}[/dim]")
+        interests_str = typer.prompt(
+            get_message("wizard.interests_prompt", eff_lang),
+            default=defaults.get("interests", ""),
+        ).strip()
+        selected_interests = [i.strip().lower() for i in interests_str.split(",") if i.strip()] if interests_str else []
 
     # ── Step 5: API Keys ───────────────────────────────────────────────────────
     console.print(f"\n{get_message('wizard.apikey_prompt', eff_lang)}")
@@ -320,25 +576,15 @@ def run_init_wizard(
         existing_config=existing_config,
     )
 
-    # ── Post-init panel ────────────────────────────────────────────────────────
-    from khanote.models.tool import TOOL_CONFIG
-    tool_cfg = TOOL_CONFIG.get(selected_tool)
-    restart_msg = get_message(tool_cfg.restart_instruction if tool_cfg else "restart.claude-code", eff_lang)
-
-    # Check if tool is installed
+    # ── Post-init success screen ───────────────────────────────────────────────
     tool_warning = check_tool_installed(selected_tool, resolved_output)
-
-    panel_lines = [
-        f"[bold green]{get_message('init.success_title', eff_lang)}[/bold green]\n",
-        f"[bold]{get_message('init.next_steps_header', eff_lang)}[/bold]\n",
-        f"{get_message('init.step1_restart', eff_lang)}\n   {restart_msg}\n",
-        f"{get_message('init.step2_run_skill', eff_lang)}\n   [bold cyan]/khanote.start-my-day[/bold cyan]\n",
-        f"[dim]{get_message('init.tip_status', eff_lang)}[/dim]",
-    ]
     if tool_warning:
-        panel_lines.insert(2, f"[yellow]{tool_warning}[/yellow]\n")
+        console.print(f"\n[yellow]⚠[/yellow] {tool_warning}")
 
-    console.print(Panel("\n".join(panel_lines), title="khanote init"))
-
-    console.print(f"[green]✓[/green] Output: {resolved_output}")
-    console.print(f"[green]✓[/green] Tool: {selected_tool}")
+    _render_success_panel(
+        tool=selected_tool,
+        language=selected_lang,
+        role=selected_role,
+        interests=selected_interests,
+        api_keys_count=len([v for v in api_keys.values() if v]),
+    )
