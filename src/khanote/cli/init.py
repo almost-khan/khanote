@@ -504,6 +504,12 @@ def run_init_wizard(
 
         _print_step(4, get_message("wizard.interests_prompt", eff_lang))
 
+        # Prominent instruction before the checkbox prompt
+        if eff_lang == "zh":
+            console.print(f"  [{_ACCENT}]提示：按 空格键 选择/取消，选好后按 Enter 确认[/{_ACCENT}]")
+        else:
+            console.print(f"  [{_ACCENT}]Tip: press Space to select, Enter to confirm[/{_ACCENT}]")
+
         # Build Choice objects — pre-check items from existing config on re-init
         default_set = set(existing_interests) & set(_INTEREST_OPTIONS)
         interest_choices = [
@@ -514,10 +520,13 @@ def run_init_wizard(
         selected_raw: list = questionary.checkbox(
             get_message("wizard.interests_prompt", eff_lang),
             choices=interest_choices,
+            instruction="(Space = select, Enter = confirm)",
         ).ask() or []
 
         def _choice_label(s) -> str:
             """Get display label from a raw checkbox result (str or Choice)."""
+            if isinstance(s, str):
+                return s
             return getattr(s, "title", None) or getattr(s, "value", None) or str(s)
 
         selected_interests: list[str] = []
