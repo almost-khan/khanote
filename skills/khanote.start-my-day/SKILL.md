@@ -21,23 +21,25 @@ Determine which mode the user wants based on whether they provided a query:
 ```markdown
 # Daily Briefing — {date}
 
-## Top Story
-[Title](url) — one-sentence summary
+## [Action Title: Key Insight of Today's Top Story]
+[Conclusion first — one sentence stating the finding. Then why it matters.] [[Source]](url)
 
 ## Your Focus
-1. [Title](url) — one-sentence summary
+1. **[Action Title as Heading]** — [Insight first, 2-3 sentences, then "so what?" implication] [[Source]](url)
 ...
 
 ## Your Feeds
 ### {feed_name}
-- [Title](url) — excerpt
+- [Action title summary: conclusion, not topic label] [[Source]](url)
 
 ## Discover
-- [Title](url) — why this is adjacent to your interests
+- **[Action Title: Why This Adjacent Topic Connects to Your Work]** — [Surprising connection and actionable follow-up] [[Source]](url)
 
 ## Sources
 All cited URLs listed here.
 ```
+
+**Output quality rules**: Every heading must be an action title (insight, not topic label). Every item must answer "so what?" for the reader. All factual claims must cite sources inline.
 
 10. Tell the user the briefing is ready and show its path. Offer to open it or summarize it inline.
 
@@ -52,11 +54,11 @@ All cited URLs listed here.
 Generated: {date}
 
 ## Executive Summary
-[Key conclusion stated upfront]
+[Single most important conclusion stated in the first sentence — Pyramid Principle. Supporting evidence follows.]
 
 ## Key Findings
-- Finding 1 [HIGH confidence]
-- Finding 2 [MEDIUM confidence]
+- **[Action Title: Finding 1 as Conclusion]** [HIGH confidence] — [Evidence + implication]
+- **[Action Title: Finding 2 as Conclusion]** [MEDIUM confidence] — [Evidence + implication]
 
 ## Dissenting Views
 [Counter-evidence or alternative perspectives]
