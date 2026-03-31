@@ -340,8 +340,9 @@ class TestInteractiveCheckboxPrompt:
                         except Exception:
                             pass
 
-        choices_str = str(captured_choices).lower()
-        assert "other" in choices_str or "custom" in choices_str
+        # Check Choice.title attributes for "Other (custom)"
+        titles = [getattr(c, "title", str(c)).lower() for c in captured_choices]
+        assert any("other" in t or "custom" in t for t in titles)
 
     def test_other_custom_triggers_text_followup(self, tmp_path, monkeypatch):
         """Selecting 'Other (custom)' triggers a questionary.text follow-up prompt."""
@@ -355,8 +356,13 @@ class TestInteractiveCheckboxPrompt:
             return mock
 
         def mock_checkbox(message, choices, **kwargs):
-            # Return "Other (custom)" as selected
-            other = next((c for c in choices if "other" in str(c).lower() or "custom" in str(c).lower()), None)
+            # Return "Other (custom)" as selected — find it by title attribute
+            other = next(
+                (c for c in choices
+                 if "other" in getattr(c, "title", str(c)).lower()
+                 or "custom" in getattr(c, "title", str(c)).lower()),
+                None,
+            )
             selected = [other] if other else []
             mock = type("Q", (), {"ask": lambda self: selected})()
             return mock
@@ -459,15 +465,15 @@ class TestReInitInteractiveDefaults:
         calls_with_defaults = [c for c in select_defaults if c["default"] is not None]
         assert len(calls_with_defaults) > 0
 
-    def test_reinit_passes_existing_interests_as_default_to_checkbox(self, existing_khanote_dir, monkeypatch):
-        """Re-init must pass previous interests as `default` kwarg to questionary.checkbox."""
+    def test_reinit_passes_existing_interests_as_checked_choices(self, existing_khanote_dir, monkeypatch):
+        """Re-init must pass previous interests as checked=True Choice objects to questionary.checkbox."""
         monkeypatch.chdir(existing_khanote_dir)
         monkeypatch.setattr("sys.stdin.isatty", lambda: True)
-        checkbox_defaults = []
+        captured_choices = []
 
-        def mock_checkbox(message, choices, default=None, **kwargs):
-            checkbox_defaults.append(default)
-            mock = type("Q", (), {"ask": lambda self: default or []})()
+        def mock_checkbox(message, choices, **kwargs):
+            captured_choices.extend(choices)
+            mock = type("Q", (), {"ask": lambda self: []})()
             return mock
 
         with patch("questionary.select") as mock_sel:
@@ -482,9 +488,9 @@ class TestReInitInteractiveDefaults:
                         except Exception:
                             pass
 
-        # Default should contain "ai" from existing_khanote_dir fixture
-        all_defaults = [d for d in checkbox_defaults if d]
-        assert len(all_defaults) > 0
+        # At least one Choice should have checked=True (from existing config with "ai" interest)
+        checked = [c for c in captured_choices if getattr(c, "checked", False)]
+        assert len(checked) > 0
 
 
 class TestCtrlCCleanExitQuestionary:

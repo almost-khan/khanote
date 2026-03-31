@@ -504,24 +504,33 @@ def run_init_wizard(
 
         _print_step(4, get_message("wizard.interests_prompt", eff_lang))
 
-        interest_choices = _INTEREST_OPTIONS + [_OTHER_CUSTOM_LABEL]
-        default_interests = [i for i in existing_interests if i in _INTEREST_OPTIONS]
+        # Build Choice objects — pre-check items from existing config on re-init
+        default_set = set(existing_interests) & set(_INTEREST_OPTIONS)
+        interest_choices = [
+            questionary.Choice(title=opt, checked=(opt in default_set))
+            for opt in _INTEREST_OPTIONS
+        ] + [questionary.Choice(title=_OTHER_CUSTOM_LABEL, checked=False)]
 
         selected_raw: list = questionary.checkbox(
             get_message("wizard.interests_prompt", eff_lang),
             choices=interest_choices,
-            default=default_interests or None,
         ).ask() or []
 
         selected_interests: list[str] = []
+
+        def _choice_label(s) -> str:
+            """Get display label from a raw checkbox result (str or Choice)."""
+            return getattr(s, "title", None) or getattr(s, "value", None) or str(s)
+
         has_custom = any(
-            "other" in str(s).lower() or "custom" in str(s).lower()
+            "other" in _choice_label(s).lower() or "custom" in _choice_label(s).lower()
             for s in selected_raw
         )
 
         for item in selected_raw:
-            if "other" not in str(item).lower() and "custom" not in str(item).lower():
-                selected_interests.append(str(item))
+            label = _choice_label(item)
+            if "other" not in label.lower() and "custom" not in label.lower():
+                selected_interests.append(label)
 
         if has_custom:
             custom_raw = questionary.text(
