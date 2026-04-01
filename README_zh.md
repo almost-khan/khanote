@@ -1,6 +1,6 @@
 # khanote
 
-*你的研究差点达到汗级水准。现在真的到了。不客气。*
+*Your research was almost Khan-worthy. Now it is. You're welcome.*
 
 专为 vibe coding 工具设计的研究工作流套件——包含每日简报、订阅管理和结构化研究会话的 SOP 技能。输出纯 Markdown，强烈推荐配合 **[Obsidian](https://obsidian.md)** 使用。
 
