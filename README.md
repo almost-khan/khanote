@@ -31,31 +31,37 @@ khanote installs a set of **skills** (SOPs) into your vibe coding tool. When you
 
 ## Quick Start
 
-**Step 1 — Install**
-
 ```bash
+# 1. Install
 brew install almost-khan/tap/khanote
 # or: pip install khanote  |  pipx install khanote
-```
 
-**Step 2 — Set up (from your Obsidian vault)**
-
-```bash
+# 2. cd into your Obsidian vault, then init
 cd ~/your-obsidian-vault
 khanote init
+
+# 3. Restart Claude Code (or your tool), then type:
+#    /khanote.start-my-day
 ```
 
-The interactive wizard shows a gradient ASCII art banner, then walks you through 5 steps with arrow-key navigation and dot progress indicators (`● ● ○ ○ ○`). Everything installs in the current directory.
+That's it — your first daily briefing is saved as Markdown in your vault. Open it in Obsidian.
 
-**Step 3 — Restart your tool and run your first briefing**
+### What happens in each step
 
-Restart Claude Code (or your chosen tool), then type:
+**`khanote init`** runs a 5-step interactive wizard right in your terminal:
 
-```
-/khanote.start-my-day
-```
+1. **Language** — pick your output language (English, 中文, 日本語, …)
+2. **Tool** — which vibe coding tool you use (Claude Code, Cursor, Codex, …)
+3. **Role** — developer, PM, researcher, or mixed
+4. **Interests** — select topics (AI, web, security, …) to seed your starter feeds
+5. **API Keys** — paste keys for researchers like Perplexity, NewsAPI (or press Enter to skip)
 
-Your first daily briefing is saved as Markdown in your vault. Open it in Obsidian.
+All config and skills are written **into the current directory** (`.khanote/`, `.claude/`, etc.). This means:
+- You must `cd` into your vault before running `khanote init`
+- Each vault is independent — no global config, nothing installed elsewhere
+- Running `khanote init` again in the same directory detects existing config and lets you update it
+
+**Why restart your tool?** Skills are loaded when your tool starts. After `khanote init` installs skill files, a restart picks them up. After that, no more restarts needed.
 
 ---
 

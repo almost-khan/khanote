@@ -31,31 +31,37 @@ khanote 将一套**技能**（SOP 指令）安装到你的 vibe coding 工具中
 
 ## 快速开始
 
-**第一步 — 安装**
-
 ```bash
+# 1. 安装
 brew install almost-khan/tap/khanote
 # 或：pip install khanote  |  pipx install khanote
-```
 
-**第二步 — 初始化（在你的 Obsidian vault 目录下）**
-
-```bash
+# 2. cd 到你的 Obsidian vault 目录，然后初始化
 cd ~/your-obsidian-vault
 khanote init
+
+# 3. 重启 Claude Code（或你的工具），然后输入：
+#    /khanote.start-my-day
 ```
 
-交互式向导会展示渐变色 ASCII 艺术 Logo，然后用箭头键导航和圆点进度条（`● ● ○ ○ ○`）引导你完成 5 步设置。所有文件安装在当前目录。
+搞定——你的第一份每日简报已保存为 Markdown，在 Obsidian 中打开它。
 
-**第三步 — 重启工具，运行第一份简报**
+### 每一步发生了什么
 
-重启 Claude Code（或你选择的工具），然后输入：
+**`khanote init`** 在终端运行一个 5 步交互式向导：
 
-```
-/khanote.start-my-day
-```
+1. **语言** — 选择输出语言（English、中文、日本語……）
+2. **工具** — 你用哪个 vibe coding 工具（Claude Code、Cursor、Codex……）
+3. **角色** — 开发者、PM、研究员或综合
+4. **兴趣** — 选择感兴趣的领域（AI、Web、安全……），自动生成初始订阅
+5. **API Keys** — 输入研究者的密钥如 Perplexity、NewsAPI（或按 Enter 跳过）
 
-你的第一份每日简报已保存为 Markdown。在 Obsidian 中打开它。
+所有配置和技能文件都写入**当前目录**（`.khanote/`、`.claude/` 等）。这意味着：
+- 你必须先 `cd` 到 vault 目录再运行 `khanote init`
+- 每个 vault 是独立的——没有全局配置，不会在别处安装任何东西
+- 在同一目录再次运行 `khanote init` 会检测已有配置，让你更新而非覆盖
+
+**为什么要重启工具？** 技能文件在工具启动时加载。`khanote init` 安装技能后，需要重启一次让工具识别。之后不再需要重启。
 
 ---
 
