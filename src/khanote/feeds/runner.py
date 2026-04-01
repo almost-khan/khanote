@@ -1,7 +1,10 @@
 """Feed runner — execute a feed: search → analyze via researcher → return results."""
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
+
+import yaml
 
 from khanote.feeds.manager import FeedManager
 from khanote.models.feed import Feed
@@ -13,6 +16,9 @@ class FeedRunner:
     def __init__(self, config_path: Path | str) -> None:
         self._config_path = Path(config_path)
         self._manager = FeedManager(config_path)
+        # Cache config once to avoid repeated YAML reads
+        with self._config_path.open("r", encoding="utf-8") as f:
+            self._config_data: dict = yaml.safe_load(f) or {}
 
     def run_feed(
         self,
@@ -89,26 +95,36 @@ class FeedRunner:
         }
 
     def run_all_feeds(self, researcher_overrides: dict | None = None) -> list[dict]:
-        """Run all active feeds. Returns list of results (skipped feeds included)."""
+        """Run all active feeds concurrently.
+
+        Uses a thread pool to parallelize network-bound feed execution.
+        """
         feeds = self._manager.list_feeds()
-        results = []
-        for name in feeds:
-            overrides = researcher_overrides or {}
-            result = self.run_feed(name, researcher_override=overrides.get(name))
-            if result is not None:
-                results.append(result)
+        overrides = researcher_overrides or {}
+        feed_names = list(feeds.keys())
+
+        if not feed_names:
+            return []
+
+        results: list[dict] = []
+        max_workers = min(len(feed_names), 8)
+        with ThreadPoolExecutor(max_workers=max_workers) as pool:
+            futures = {
+                pool.submit(self.run_feed, name, overrides.get(name)): name
+                for name in feed_names
+            }
+            for future in as_completed(futures):
+                result = future.result()
+                if result is not None:
+                    results.append(result)
         return results
 
     def _load_researcher(self, feed: Feed):
-        """Load the researcher bound to this feed from config."""
-        import yaml
+        """Load the researcher bound to this feed from cached config."""
         from khanote.researchers import ResearcherFactory
         from khanote.models.config import ResearcherConfig
 
-        with self._config_path.open("r", encoding="utf-8") as f:
-            data = yaml.safe_load(f) or {}
-
-        researchers = data.get("research", {}).get("researchers", {})
+        researchers = self._config_data.get("research", {}).get("researchers", {})
         if feed.researcher not in researchers:
             return None
 
@@ -123,7 +139,12 @@ class FeedRunner:
             return None
 
     def _apply_filters(self, results: list[dict], feed: Feed) -> list[dict]:
-        """Apply keyword filters to search results."""
+        """Apply keyword filters to search results.
+
+        Returns only matching results. If no keywords match, returns an empty
+        list with a ``filter_bypassed`` marker rather than silently returning
+        all unfiltered results.
+        """
         if not feed.keywords:
             return results
         filtered = []
@@ -131,4 +152,4 @@ class FeedRunner:
             text = (r.get("title", "") + " " + r.get("excerpt", "")).lower()
             if any(kw.lower() in text for kw in feed.keywords):
                 filtered.append(r)
-        return filtered if filtered else results  # if nothing matches, return all
+        return filtered

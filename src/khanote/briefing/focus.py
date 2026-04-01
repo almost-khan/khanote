@@ -4,7 +4,8 @@ from __future__ import annotations
 from khanote.preferences.models import Preferences
 
 _DEFAULT_COUNT = 5
-_INTEREST_BOOST = 0.3  # Score boost for items matching user interests
+_INTEREST_BOOST_PER_MATCH = 0.25  # Score boost per matched interest
+_INTEREST_BOOST_CAP = 0.5  # Maximum total interest boost
 
 
 class FocusSelector:
@@ -35,19 +36,21 @@ class FocusSelector:
         return [item for _, item in scored[:count]]
 
     def _weighted_score(self, item: dict) -> float:
-        """Calculate weighted score for an item."""
+        """Calculate weighted score for an item.
+
+        Items matching multiple user interests receive a higher boost
+        (capped at _INTEREST_BOOST_CAP) so broader-relevance items
+        surface above single-interest matches.
+        """
         base = float(item.get("score", 0.5))
-        boost = 0.0
 
-        if self._prefs.interests:
-            text = (
-                (item.get("title", "") + " " + item.get("excerpt", "")).lower()
-            )
-            for interest in self._prefs.interests:
-                # Normalize interest (ai-agents → ai agents)
-                normalized = interest.replace("-", " ").replace("_", " ").lower()
-                if normalized in text:
-                    boost = _INTEREST_BOOST
-                    break
+        if not self._prefs.interests:
+            return base
 
+        text = (item.get("title", "") + " " + item.get("excerpt", "")).lower()
+        matches = sum(
+            1 for interest in self._prefs.interests
+            if interest.replace("-", " ").replace("_", " ").lower() in text
+        )
+        boost = min(matches * _INTEREST_BOOST_PER_MATCH, _INTEREST_BOOST_CAP)
         return base + boost

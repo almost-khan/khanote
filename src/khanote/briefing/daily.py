@@ -88,6 +88,9 @@ class DailyBriefingOrchestrator:
     def __init__(self, config_path: Path | str) -> None:
         self._config_path = Path(config_path)
         self._config_dir = self._config_path.parent
+        # Cache config once to avoid repeated YAML reads
+        with self._config_path.open("r", encoding="utf-8") as f:
+            self._config_data: dict = yaml.safe_load(f) or {}
 
     def run(self, researcher_overrides: dict | None = None) -> dict:
         """Execute the daily briefing flow.
@@ -136,9 +139,12 @@ class DailyBriefingOrchestrator:
         selector = FocusSelector(prefs)
         focus_items = selector.select(deduped, count=5)
 
+        # Build discover context for use in briefing
+        discover_ctx = build_discover_context(prefs, stats)
+
         # Generate briefing content
         date_str = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d")
-        content = self._generate_briefing(date_str, focus_items, feed_sections, errors, prefs, stats)
+        content = self._generate_briefing(date_str, focus_items, feed_sections, errors, prefs, discover_ctx)
 
         # Extract slug from content
         slug = self._extract_slug(content) or "daily-briefing"
@@ -174,10 +180,8 @@ class DailyBriefingOrchestrator:
             pass
 
     def _load_vault_path(self) -> Path:
-        """Load vault_path from config.yaml."""
-        with self._config_path.open("r", encoding="utf-8") as f:
-            data = yaml.safe_load(f) or {}
-        vault_path = data.get("vault_path", str(self._config_dir.parent))
+        """Load vault_path from cached config."""
+        vault_path = self._config_data.get("vault_path", str(self._config_dir.parent))
         return Path(vault_path)
 
     def _generate_briefing(
@@ -187,11 +191,9 @@ class DailyBriefingOrchestrator:
         feed_sections: dict[str, list[dict]],
         errors: list[str],
         prefs: Preferences,
-        stats: UsageStats | None = None,
+        discover_ctx: dict | None = None,
     ) -> str:
         """Generate the briefing markdown content."""
-        # Build discover context for Discover section
-        build_discover_context(prefs, stats or UsageStats())
         show_discover = (
             prefs.discover.enabled
             and prefs.discover.serendipity > 0.0
@@ -235,13 +237,24 @@ class DailyBriefingOrchestrator:
                     lines.append(f"- **{title}** — {excerpt}")
             lines.append("")
 
-        # Discover section
+        # Discover section — uses discover_ctx for personalized recommendations
         if show_discover and (feed_sections or focus_items):
-            interests_str = ", ".join(prefs.interests) if prefs.interests else "general topics"
+            ctx = discover_ctx or {}
+            domain_name = ctx.get("domain_name", "general topics")
+            liked = ctx.get("liked_topics", [])
+            recent = ctx.get("recent_topics", [])
             lines += [
                 "## Discover",
-                f"*Expanding beyond {interests_str}:*",
+                f"*Expanding beyond {domain_name}:*",
                 "",
+            ]
+            if liked:
+                lines.append(f"**Liked topics**: {', '.join(liked[:5])}")
+                lines.append("")
+            if recent:
+                lines.append(f"**Recent topics**: {', '.join(recent[:5])}")
+                lines.append("")
+            lines += [
                 "> Use `khanote discover like <topic>` or `khanote discover dislike <topic>` to tune future recommendations.",
                 "",
             ]

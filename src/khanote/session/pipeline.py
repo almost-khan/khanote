@@ -92,7 +92,12 @@ class PipelineOrchestrator:
             result["warnings"].append(SOP_MODE_MESSAGE)
 
         # Step 1: Start session
-        mgr = SessionManager(vault_dir=self.vault_dir, researcher=getattr(self.researcher, "__class__", object).__name__.lower().replace("researcher", "") or "perplexity")
+        researcher_name = getattr(self.researcher, "name", None)
+        if not isinstance(researcher_name, str) or not researcher_name:
+            # Derive from class name as fallback (e.g. PerplexityResearcher → perplexity)
+            cls_name = type(self.researcher).__name__.lower()
+            researcher_name = cls_name.removesuffix("researcher") or "perplexity"
+        mgr = SessionManager(vault_dir=self.vault_dir, researcher=researcher_name)
         session_dir = mgr.create(topic)
         result["session_dir"] = session_dir
 
