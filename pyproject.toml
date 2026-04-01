@@ -41,10 +41,16 @@ pdf = ["pdfplumber>=0.10.0"]
 [tool.hatch.build.targets.wheel]
 packages = ["src/khanote"]
 
-[tool.hatch.build]
+[tool.hatch.build.targets.wheel.force-include]
+"skills" = "khanote/skills"
+
+[tool.hatch.build.targets.sdist]
 include = [
     "src/khanote/**",
     "skills/**",
+    "tests/**",
+    "pyproject.toml",
+    "README.md",
 ]
 
 [tool.pytest.ini_options]
