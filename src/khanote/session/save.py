@@ -5,6 +5,8 @@ import re
 from datetime import date
 from pathlib import Path
 
+from khanote.session.utils import extract_sources, update_session_status
+
 _SYNTHESIS_TEMPLATE = """---
 session: {session}
 created: {created}
@@ -39,13 +41,13 @@ class SessionSaver:
         """
         summary = summary or self._extract_summary_from_research()
         synthesis_path = self._write_synthesis(summary)
-        self._update_session_status("completed")
+        update_session_status(self.session_dir, "completed")
         self._update_index()
         return synthesis_path
 
     def _write_synthesis(self, summary: str) -> Path:
         session_rel = str(self.session_dir.name)
-        sources = self._extract_sources()
+        sources = extract_sources(self.session_dir)
         content = _SYNTHESIS_TEMPLATE.format(
             session=session_rel,
             created=date.today().isoformat(),
@@ -70,34 +72,6 @@ class SessionSaver:
         content = notes[-1].read_text(encoding="utf-8")
         match = re.search(r"## Summary\n\n(.+?)(?=\n## |\Z)", content, re.DOTALL)
         return match.group(1).strip() if match else "(Summary not found)"
-
-    def _extract_sources(self) -> list[str]:
-        session_md = self.session_dir / "_session.md"
-        if not session_md.exists():
-            return []
-        content = session_md.read_text(encoding="utf-8")
-        sources = []
-        in_sources = False
-        for line in content.splitlines():
-            if line.strip() == "## Sources":
-                in_sources = True
-                continue
-            if line.startswith("## ") and in_sources:
-                break
-            if in_sources and line.strip().startswith("- "):
-                src = line.strip().lstrip("- ")
-                if src.startswith("["):
-                    src = src.split("] ", 1)[-1] if "] " in src else src
-                sources.append(src.strip())
-        return sources
-
-    def _update_session_status(self, status: str) -> None:
-        session_md = self.session_dir / "_session.md"
-        if not session_md.exists():
-            return
-        content = session_md.read_text(encoding="utf-8")
-        content = re.sub(r"status:\s*\S+", f"status: {status}", content)
-        session_md.write_text(content, encoding="utf-8")
 
     def _update_index(self) -> None:
         """Update status in khanote/_index.md for this session."""

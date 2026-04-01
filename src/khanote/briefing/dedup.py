@@ -45,6 +45,9 @@ def deduplicate(items: list[dict], similarity_threshold: float = 0.85) -> list[d
     - Prefer longer excerpts
     - Prefer higher scores on tie
 
+    Uses a URL index for O(1) exact-match lookups before falling back to
+    O(n) title similarity checks.
+
     Args:
         items: List of search result dicts. Expected keys: id, title, excerpt, score.
         similarity_threshold: Title similarity above which items are considered duplicates.
@@ -56,39 +59,42 @@ def deduplicate(items: list[dict], similarity_threshold: float = 0.85) -> list[d
         return []
 
     kept: list[dict] = []
-    # Track (title, url) for dedup
+    # O(1) URL lookup: url → index in kept list
+    url_index: dict[str, int] = {}
+
     for item in items:
         title = item.get("title", "")
         url = item.get("url")
 
-        # Check against already-kept items
+        # Phase 1: O(1) URL exact-match check
         duplicate_idx = None
-        for i, k in enumerate(kept):
-            k_title = k.get("title", "")
-            k_url = k.get("url")
+        if url and url in url_index:
+            duplicate_idx = url_index[url]
 
-            # URL match is definitive
-            if url and k_url and url == k_url:
-                duplicate_idx = i
-                break
-
-            # Title similarity
-            if title and k_title and _similarity(title, k_title) >= similarity_threshold:
-                duplicate_idx = i
-                break
+        # Phase 2: O(n) title similarity (only when URL didn't match)
+        if duplicate_idx is None:
+            for i, k in enumerate(kept):
+                k_title = k.get("title", "")
+                if title and k_title and _similarity(title, k_title) >= similarity_threshold:
+                    duplicate_idx = i
+                    break
 
         if duplicate_idx is None:
+            idx = len(kept)
             kept.append(item)
+            if url:
+                url_index[url] = idx
         else:
             # Merge: keep the richer item
             existing = kept[duplicate_idx]
             if _richness_score(item) > _richness_score(existing):
-                # Replace but keep the higher score
                 merged = dict(item)
                 merged["score"] = max(item.get("score", 0.0), existing.get("score", 0.0))
                 kept[duplicate_idx] = merged
+                # Update URL index for the replacement
+                if url:
+                    url_index[url] = duplicate_idx
             else:
-                # Keep existing, but update score if new item had higher
                 existing["score"] = max(existing.get("score", 0.0), item.get("score", 0.0))
 
     return kept

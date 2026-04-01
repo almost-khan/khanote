@@ -56,6 +56,9 @@ class AdhocOrchestrator:
     def __init__(self, config_path: Path | str) -> None:
         self._config_path = Path(config_path)
         self._config_dir = self._config_path.parent
+        # Cache config once to avoid repeated YAML reads per researcher load
+        with self._config_path.open("r", encoding="utf-8") as f:
+            self._config_data: dict = yaml.safe_load(f) or {}
 
     def run(
         self,
@@ -66,8 +69,8 @@ class AdhocOrchestrator:
 
         Flow:
         1. Load preferences + registry
-        2. If simple query → direct execution with default researcher
-        3. If complex query → decompose (via SOP template context) → route → execute
+        2. If simple query → direct execution with single researcher
+        3. If complex query → broadcast to multiple available researchers
         4. Synthesize results → save report
 
         Args:
@@ -140,7 +143,12 @@ class AdhocOrchestrator:
     def _execute_multi(
         self, query: str, registry: dict, researcher_overrides: dict | None
     ) -> list[dict]:
-        """Execute query across multiple researchers."""
+        """Broadcast query to multiple available researchers and collect results.
+
+        Note: this does *not* decompose the query into sub-queries — the same
+        query is sent to each researcher. True decomposition (split → route →
+        merge) is planned but not yet implemented.
+        """
         overrides = researcher_overrides or {}
         results = []
 
@@ -168,16 +176,12 @@ class AdhocOrchestrator:
         return results
 
     def _load_researcher(self, name: str):
-        """Load a researcher by name from config."""
+        """Load a researcher by name from cached config."""
         try:
-            import yaml
             from khanote.researchers import ResearcherFactory
             from khanote.models.config import ResearcherConfig
 
-            with self._config_path.open("r", encoding="utf-8") as f:
-                data = yaml.safe_load(f) or {}
-
-            researchers = data.get("research", {}).get("researchers", {})
+            researchers = self._config_data.get("research", {}).get("researchers", {})
             if name not in researchers:
                 return None
 
@@ -188,10 +192,8 @@ class AdhocOrchestrator:
             return None
 
     def _load_vault_path(self) -> Path:
-        """Load vault_path from config.yaml."""
-        with self._config_path.open("r", encoding="utf-8") as f:
-            data = yaml.safe_load(f) or {}
-        vault_path = data.get("vault_path", str(self._config_dir.parent))
+        """Load vault_path from cached config."""
+        vault_path = self._config_data.get("vault_path", str(self._config_dir.parent))
         return Path(vault_path)
 
     def _generate_report(
